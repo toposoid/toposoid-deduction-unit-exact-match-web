@@ -3,6 +3,8 @@ This is a WEB API that works as a microservice within the toposoid project.
 Toposoid is a knowledge base construction platform.(see [Toposoid　Root Project](https://github.com/toposoid/toposoid.git))
 This microservice provides the ability to determine if the text you enter matches the knowledge graph exactly. 
 
+[![Unit Test And Build Image Action](https://github.com/toposoid/toposoid-deduction-unit-exact-match-web/actions/workflows/action.yml/badge.svg?branch=main)](https://github.com/toposoid/toposoid-deduction-unit-exact-match-web/actions/workflows/action.yml)
+
 <img width="1094" alt="2021-09-27 18 34 51" src="https://user-images.githubusercontent.com/82787843/134884028-7e9ef59c-033a-44ce-92ab-cba45a7baea7.png">
 
 ## Requirements
