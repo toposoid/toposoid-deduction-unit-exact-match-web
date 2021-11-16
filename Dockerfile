@@ -1,7 +1,7 @@
-FROM toposoid/toposoid-core:0.1.0
+FROM toposoid/toposoid-core:0.1.1
 
 WORKDIR /app
-
+ARG TARGET_BRANCH
 ENV DEPLOYMENT=local
 ENV _JAVA_OPTIONS="-Xms2g -Xmx4g"
 
@@ -12,10 +12,12 @@ RUN git clone https://github.com/toposoid/toposoid-deduction-common.git \
 && cd .. \
 && git clone https://github.com/toposoid/toposoid-deduction-unit-exact-match-web.git \
 && cd toposoid-deduction-unit-exact-match-web \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
 && sbt playUpdateSecret 1> /dev/null \
 && sbt dist  \
 && cd /app/toposoid-deduction-unit-exact-match-web/target/universal  \
-&& unzip -o toposoid-deduction-unit-exact-match-web-0.1.0.zip
+&& unzip -o toposoid-deduction-unit-exact-match-web-0.1.1.zip
 
 COPY ./docker-entrypoint.sh /app/
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
