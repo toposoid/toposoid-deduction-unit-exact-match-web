@@ -1,4 +1,4 @@
-name: Unit Test And Build Image Action
+name: Test And Build
 on:
   push:
     branches:
