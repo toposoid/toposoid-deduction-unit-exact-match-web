@@ -8,6 +8,7 @@ on:
 env:
   PJ_ACTOR: toposoid
   PJ_REPO: toposoid-deduction-unit-exact-match-web
+  PJ_BRANCH: feature
   PJ_VERSION: 0.1.1
 jobs:
   unit-test_toposoid-deduction-unit-exact-match-web:
