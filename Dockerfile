@@ -7,6 +7,8 @@ ENV _JAVA_OPTIONS="-Xms2g -Xmx4g"
 
 RUN git clone https://github.com/toposoid/toposoid-deduction-common.git \
 && cd toposoid-deduction-common \
+&& git fetch origin ${TARGET_BRANCH} \
+&& git checkout ${TARGET_BRANCH} \
 && sbt publishLocal \
 && rm -Rf ./target \
 && cd .. \
