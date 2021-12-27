@@ -33,7 +33,8 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
 
   override def beforeAll(): Unit = {
     Neo4JAccessor.delete()
-    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("案ずるより産むが易し。", "{}" )))
+    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}" )))
+    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}" )))
   }
 
   override def afterAll(): Unit = {
@@ -42,16 +43,16 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
 
   val controller: HomeController = inject[HomeController]
 
-  "The specification" should {
+  "The specification1" should {
     "returns an appropriate response" in {
       val json =
         """{
           |    "analyzedSentenceObjects": [
           |        {
           |            "nodeMap": {
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-2": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-2",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 2,
           |                    "parentId": -1,
           |                    "isMainSection": true,
@@ -76,11 +77,12 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                },
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-1": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 1,
           |                    "parentId": 2,
           |                    "isMainSection": false,
@@ -105,11 +107,12 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                },
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-0": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-0",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 0,
           |                    "parentId": 1,
           |                    "isMainSection": false,
@@ -134,23 +137,195 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                }
           |            },
           |            "edgeList": [
           |                {
-          |                    "sourceId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
-          |                    "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-2",
+          |                    "sourceId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
+          |                    "destinationId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2",
           |                    "caseStr": "連用",
           |                    "dependType": "D",
-          |                    "logicType": "-"
+          |                    "logicType": "-",
+          |                    "lang": "ja_JP"
           |                },
           |                {
-          |                    "sourceId": "75f3c079-848e-4f88-8155-4f198b2b68e2-0",
-          |                    "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
+          |                    "sourceId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0",
+          |                    "destinationId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
           |                    "caseStr": "連用",
           |                    "dependType": "D",
-          |                    "logicType": "-"
+          |                    "logicType": "-",
+          |                    "lang": "ja_JP"
+          |                }
+          |            ],
+          |            "sentenceType": 1,
+          |            "deductionResultMap": {
+          |                "0": {
+          |                    "status": false,
+          |                    "matchedPropositionIds": [],
+          |                    "deductionUnit": ""
+          |                },
+          |                "1": {
+          |                    "status": false,
+          |                    "matchedPropositionIds": [],
+          |                    "deductionUnit": ""
+          |                }
+          |            }
+          |        }
+          |    ]
+          |}""".stripMargin
+
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification2" should {
+    "returns an appropriate response" in {
+      val json =
+        """{
+          |    "analyzedSentenceObjects": [
+          |        {
+          |            "nodeMap": {
+          |                "14205129-e188-4da2-a6da-773335494151-0": {
+          |                    "nodeId": "14205129-e188-4da2-a6da-773335494151-0",
+          |                    "propositionId": "14205129-e188-4da2-a6da-773335494151",
+          |                    "currentId": 0,
+          |                    "parentId": 1,
+          |                    "isMainSection": true,
+          |                    "surface": "Time",
+          |                    "normalizedName": "time",
+          |                    "dependType": "-",
+          |                    "caseType": "nsubj",
+          |                    "namedEntity": "",
+          |                    "rangeExpressions": {
+          |                        "": {}
+          |                    },
+          |                    "categories": {},
+          |                    "domains": {},
+          |                    "isDenial": false,
+          |                    "isConditionalConnection": false,
+          |                    "normalizedNameYomi": "",
+          |                    "surfaceYomi": "",
+          |                    "modalityType": "-",
+          |                    "logicType": "-",
+          |                    "nodeType": 1,
+          |                    "lang": "en_US",
+          |                    "extentText": "{}"
+          |                },
+          |                "14205129-e188-4da2-a6da-773335494151-1": {
+          |                    "nodeId": "14205129-e188-4da2-a6da-773335494151-1",
+          |                    "propositionId": "14205129-e188-4da2-a6da-773335494151",
+          |                    "currentId": 1,
+          |                    "parentId": 1,
+          |                    "isMainSection": true,
+          |                    "surface": "is",
+          |                    "normalizedName": "be",
+          |                    "dependType": "-",
+          |                    "caseType": "ROOT",
+          |                    "namedEntity": "",
+          |                    "rangeExpressions": {
+          |                        "": {}
+          |                    },
+          |                    "categories": {},
+          |                    "domains": {},
+          |                    "isDenial": false,
+          |                    "isConditionalConnection": false,
+          |                    "normalizedNameYomi": "",
+          |                    "surfaceYomi": "",
+          |                    "modalityType": "-",
+          |                    "logicType": "-",
+          |                    "nodeType": 1,
+          |                    "lang": "en_US",
+          |                    "extentText": "{}"
+          |                },
+          |                "14205129-e188-4da2-a6da-773335494151-2": {
+          |                    "nodeId": "14205129-e188-4da2-a6da-773335494151-2",
+          |                    "propositionId": "14205129-e188-4da2-a6da-773335494151",
+          |                    "currentId": 2,
+          |                    "parentId": 1,
+          |                    "isMainSection": true,
+          |                    "surface": "money",
+          |                    "normalizedName": "money",
+          |                    "dependType": "-",
+          |                    "caseType": "attr",
+          |                    "namedEntity": "",
+          |                    "rangeExpressions": {
+          |                        "": {}
+          |                    },
+          |                    "categories": {},
+          |                    "domains": {},
+          |                    "isDenial": false,
+          |                    "isConditionalConnection": false,
+          |                    "normalizedNameYomi": "",
+          |                    "surfaceYomi": "",
+          |                    "modalityType": "-",
+          |                    "logicType": "-",
+          |                    "nodeType": 1,
+          |                    "lang": "en_US",
+          |                    "extentText": "{}"
+          |                },
+          |                "14205129-e188-4da2-a6da-773335494151-3": {
+          |                    "nodeId": "14205129-e188-4da2-a6da-773335494151-3",
+          |                    "propositionId": "14205129-e188-4da2-a6da-773335494151",
+          |                    "currentId": 3,
+          |                    "parentId": 1,
+          |                    "isMainSection": true,
+          |                    "surface": ".",
+          |                    "normalizedName": ".",
+          |                    "dependType": "-",
+          |                    "caseType": "punct",
+          |                    "namedEntity": "",
+          |                    "rangeExpressions": {
+          |                        "": {}
+          |                    },
+          |                    "categories": {},
+          |                    "domains": {},
+          |                    "isDenial": false,
+          |                    "isConditionalConnection": false,
+          |                    "normalizedNameYomi": "",
+          |                    "surfaceYomi": "",
+          |                    "modalityType": "-",
+          |                    "logicType": "-",
+          |                    "nodeType": 1,
+          |                    "lang": "en_US",
+          |                    "extentText": "{}"
+          |                }
+          |            },
+          |            "edgeList": [
+          |                {
+          |                    "sourceId": "14205129-e188-4da2-a6da-773335494151-0",
+          |                    "destinationId": "14205129-e188-4da2-a6da-773335494151-1",
+          |                    "caseStr": "nsubj",
+          |                    "dependType": "-",
+          |                    "logicType": "-",
+          |                    "lang": "en_US"
+          |                },
+          |                {
+          |                    "sourceId": "14205129-e188-4da2-a6da-773335494151-2",
+          |                    "destinationId": "14205129-e188-4da2-a6da-773335494151-1",
+          |                    "caseStr": "attr",
+          |                    "dependType": "-",
+          |                    "logicType": "-",
+          |                    "lang": "en_US"
+          |                },
+          |                {
+          |                    "sourceId": "14205129-e188-4da2-a6da-773335494151-3",
+          |                    "destinationId": "14205129-e188-4da2-a6da-773335494151-1",
+          |                    "caseStr": "punct",
+          |                    "dependType": "-",
+          |                    "logicType": "-",
+          |                    "lang": "en_US"
           |                }
           |            ],
           |            "sentenceType": 1,
