@@ -37,7 +37,7 @@ import scala.util.{Failure, Success, Try}
 class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController  with LazyLogging{
 
   /**
-   * This function receives the predicate argument structure analysis result of a Japanese sentence as JSON,
+   * This function receives a parser's result as JSON,
    * checks whether it matches logically strictly with the knowledge database, and returns the result in JSON.
    */
   def execute()  = Action(parse.json) { request =>
