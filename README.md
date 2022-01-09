@@ -54,6 +54,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
                     "modalityType": "-",
                     "logicType": "-",
                     "nodeType": 1,
+                    "lang": "ja_JP",
                     "extentText": "{}"
                 },
                 "75f3c079-848e-4f88-8155-4f198b2b68e2-1": {
@@ -83,6 +84,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
                     "modalityType": "-",
                     "logicType": "-",
                     "nodeType": 1,
+                    "lang": "ja_JP",
                     "extentText": "{}"
                 },
                 "75f3c079-848e-4f88-8155-4f198b2b68e2-0": {
@@ -112,6 +114,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
                     "modalityType": "-",
                     "logicType": "-",
                     "nodeType": 1,
+                    "lang": "ja_JP",
                     "extentText": "{}"
                 }
             },
@@ -121,14 +124,16 @@ curl -X POST -H "Content-Type: application/json" -d '{
                     "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-2",
                     "caseStr": "連用",
                     "dependType": "D",
-                    "logicType": "-"
+                    "logicType": "-",
+                    "lang": "ja_JP"
                 },
                 {
                     "sourceId": "75f3c079-848e-4f88-8155-4f198b2b68e2-0",
                     "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
                     "caseStr": "連用",
                     "dependType": "D",
-                    "logicType": "-"
+                    "logicType": "-",
+                    "lang": "ja_JP"
                 }
             ],
             "sentenceType": 1,
