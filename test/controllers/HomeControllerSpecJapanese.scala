@@ -29,11 +29,11 @@ import play.api.libs.json.Json
 import play.api.test.Helpers.{POST, contentAsString, contentType, defaultAwaitTimeout, status, _}
 import play.api.test.{FakeRequest, _}
 
-class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with Injecting {
+class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with Injecting {
 
   override def beforeAll(): Unit = {
     Neo4JAccessor.delete()
-    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("案ずるより産むが易し。", "{}" )))
+    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}" )))
   }
 
   override def afterAll(): Unit = {
@@ -42,16 +42,16 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
 
   val controller: HomeController = inject[HomeController]
 
-  "The specification" should {
+  "The specification1" should {
     "returns an appropriate response" in {
       val json =
         """{
           |    "analyzedSentenceObjects": [
           |        {
           |            "nodeMap": {
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-2": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-2",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 2,
           |                    "parentId": -1,
           |                    "isMainSection": true,
@@ -76,11 +76,12 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                },
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-1": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 1,
           |                    "parentId": 2,
           |                    "isMainSection": false,
@@ -105,11 +106,12 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                },
-          |                "75f3c079-848e-4f88-8155-4f198b2b68e2-0": {
-          |                    "nodeId": "75f3c079-848e-4f88-8155-4f198b2b68e2-0",
-          |                    "propositionId": "75f3c079-848e-4f88-8155-4f198b2b68e2",
+          |                "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0": {
+          |                    "nodeId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0",
+          |                    "propositionId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f",
           |                    "currentId": 0,
           |                    "parentId": 1,
           |                    "isMainSection": false,
@@ -134,23 +136,26 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
           |                    "modalityType": "-",
           |                    "logicType": "-",
           |                    "nodeType": 1,
+          |                    "lang": "ja_JP",
           |                    "extentText": "{}"
           |                }
           |            },
           |            "edgeList": [
           |                {
-          |                    "sourceId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
-          |                    "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-2",
+          |                    "sourceId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
+          |                    "destinationId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-2",
           |                    "caseStr": "連用",
           |                    "dependType": "D",
-          |                    "logicType": "-"
+          |                    "logicType": "-",
+          |                    "lang": "ja_JP"
           |                },
           |                {
-          |                    "sourceId": "75f3c079-848e-4f88-8155-4f198b2b68e2-0",
-          |                    "destinationId": "75f3c079-848e-4f88-8155-4f198b2b68e2-1",
+          |                    "sourceId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-0",
+          |                    "destinationId": "cc45112f-c942-4fbe-b83e-23ee208b7c5f-1",
           |                    "caseStr": "連用",
           |                    "dependType": "D",
-          |                    "logicType": "-"
+          |                    "logicType": "-",
+          |                    "lang": "ja_JP"
           |                }
           |            ],
           |            "sentenceType": 1,
@@ -183,4 +188,5 @@ class HomeControllerSpec extends PlaySpec with BeforeAndAfter with BeforeAndAfte
       assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
     }
   }
+
 }
