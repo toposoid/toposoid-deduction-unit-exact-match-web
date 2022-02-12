@@ -16,10 +16,10 @@
 
 package controllers
 
-import com.ideal.linked.toposoid.common.ToposoidUtils
-import com.ideal.linked.toposoid.knowledgebase.model.KnowledgeBaseNode
+import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils}
+import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
 import com.ideal.linked.toposoid.protocol.model.base.{AnalyzedSentenceObject, AnalyzedSentenceObjects, DeductionResult}
-import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecodeUnit, Neo4jRecordMap, Neo4jRecords}
+import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jRecords}
 import com.typesafe.scalalogging.LazyLogging
 import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
 
@@ -56,58 +56,67 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   }
 
   /**
-   *　This function analyzes whether the entered text exactly matches.　
+   * This function analyzes whether the entered text exactly matches.　
    * @param aso
+   * @return
    */
-  private def analyze(aso:AnalyzedSentenceObject): AnalyzedSentenceObject = Try{
+  private def analyze(aso:AnalyzedSentenceObject): AnalyzedSentenceObject ={
+    val (searchResults, propositionIds) = aso.edgeList.foldLeft((List.empty[List[Neo4jRecordMap]], List.empty[String])){
+      (acc, x) => analyzeGraphKnowledge(x, aso.nodeMap, aso.sentenceType, acc)
+    }
 
-    var propositionIds = List.empty[String]
-    var searchResults= List.empty[List[Neo4jRecordMap]]
+    if(propositionIds.size < aso.edgeList.size) aso
+      //Pick up the most frequent propositionId
+    val maxFreqSize = propositionIds.groupBy(identity).mapValues(_.size).maxBy(_._2)._2
+    val propositionIdsHavingMaxFreq:List[String] = propositionIds.groupBy(identity).mapValues(_.size).filter(_._2 == maxFreqSize).map(_._1).toList
+    logger.debug(propositionIdsHavingMaxFreq.toString())
+    //If the number of search results with this positionId and the number of edges are equal,
+    //it is assumed that they match exactly. It is no longer a partial match.
+    val selectedPropositionIds =  propositionIdsHavingMaxFreq.filter(x => searchResults.filter(y =>  existALlPropositionIdEqualId(x, y)).size ==  aso.edgeList.size)
+    val deductionResult:DeductionResult = new DeductionResult(true, selectedPropositionIds, "exact-match")
+    val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
+    AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, updateDeductionResultMap)
+  }
 
-    for(edge <- aso.edgeList) {
-      val sourceKey = edge.sourceId
-      val targetKey = edge.destinationId
-      val sourceNodeSurface = aso.nodeMap.get(sourceKey).getOrElse().asInstanceOf[KnowledgeBaseNode].surface
-      val destinationNodeSurface = aso.nodeMap.get(targetKey).getOrElse().asInstanceOf[KnowledgeBaseNode].surface
+  /**
+   * This function is a sub-function of analyze
+   * @param nodeMap
+   * @param sentenceType
+   * @param accParent
+   * @return
+   */
+  private def analyzeGraphKnowledge(edge:KnowledgeBaseEdge, nodeMap:Map[String, KnowledgeBaseNode], sentenceType:Int, accParent:(List[List[Neo4jRecordMap]], List[String])): (List[List[Neo4jRecordMap]], List[String]) = {
 
-      val nodeType:String = ToposoidUtils.getNodeType(aso.sentenceType)
+    val sourceKey = edge.sourceId
+    val targetKey = edge.destinationId
+    val sourceNodeSurface = nodeMap.get(sourceKey).getOrElse().asInstanceOf[KnowledgeBaseNode].surface
+    val destinationNodeSurface = nodeMap.get(targetKey).getOrElse().asInstanceOf[KnowledgeBaseNode].surface
+    val nodeType:String = ToposoidUtils.getNodeType(sentenceType)
 
+    val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
+    logger.info(query)
+    val jsonStr:String = getCypherQueryResult(query, "")
+    //If there is even one that does not match, it is useless to search further
+    if(jsonStr.equals("""{"records":[]}""")) return (List.empty[List[Neo4jRecordMap]], List.empty[String])
+    val neo4jRecords:Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+    val (searchResults, propositionIds) = neo4jRecords.records.foldLeft(accParent){
+      (acc, x) => { (acc._1 :+ x, acc._2 :+ x.head.value.logicNode.propositionId)}
+    }
+    if(sentenceType == PREMISE.index){
+      val nodeType:String = ToposoidUtils.getNodeType(CLAIM.index)
       val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
       logger.info(query)
       val jsonStr:String = getCypherQueryResult(query, "")
-      //一つでも合致しないものがあったらそれ以上検索しても無駄
-      if(jsonStr.equals(""""{"records":[]}"""")) return aso
+      //If there is even one that does not match, it is useless to search further
+      if(jsonStr.equals("""{"records":[]}""")) return (List.empty[List[Neo4jRecordMap]], List.empty[String])
       val neo4jRecords:Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-      neo4jRecords.records.foreach( record => {
-        searchResults = searchResults :+ record
-        record.foreach { map =>
-          logger.debug(map.key, map.value)
-          if(map.key.equals("n1")){
-            val unit:Neo4jRecodeUnit = map.value
-            propositionIds = propositionIds :+ unit.logicNode.propositionId
-          }
-        }
-      })
-    }
-
-    if(propositionIds.size < aso.edgeList.size){
-      return aso
-    }else{
-      //Pick up the most frequent propositionId
-      val axiomIdHavingMaxFreq = propositionIds.groupBy(identity).mapValues(_.size).maxBy(_._2)._1
-      logger.debug(axiomIdHavingMaxFreq)
-      //このpropositionIdを持つ検索結果の数とエッジの数が等しければ厳格に一致するとする。部分一致ではなくなる。
-      val selectedList =  searchResults.filter(existALlPropositionIdEqualId(axiomIdHavingMaxFreq, _))
-      if(selectedList.size == aso.edgeList.size){
-        val deductionResult:DeductionResult = new DeductionResult(true, List(axiomIdHavingMaxFreq), "exact-match")
-        val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
-        return new AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, updateDeductionResultMap)
+      val (searchResults2, propositionIds2) = neo4jRecords.records.foldLeft((searchResults, propositionIds)){
+        (acc, x) => { (acc._1 :+ x, acc._2 :+ x.head.value.logicNode.propositionId)}
       }
+      (searchResults2, propositionIds2)
+    }else{
+      (searchResults, propositionIds)
     }
-    return aso
-
-  }match {
-    case Failure(e) => throw e
   }
 
   /**
