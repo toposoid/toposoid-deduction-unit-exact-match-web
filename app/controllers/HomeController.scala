@@ -65,7 +65,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       (acc, x) => analyzeGraphKnowledge(x, aso.nodeMap, aso.sentenceType, acc)
     }
 
-    if(propositionIds.size < aso.edgeList.size) aso
+    if(propositionIds.size < aso.edgeList.size) return aso
       //Pick up the most frequent propositionId
     val maxFreqSize = propositionIds.groupBy(identity).mapValues(_.size).maxBy(_._2)._2
     val propositionIdsHavingMaxFreq:List[String] = propositionIds.groupBy(identity).mapValues(_.size).filter(_._2 == maxFreqSize).map(_._1).toList
