@@ -44,9 +44,22 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     try {
       val json = request.body
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json.toString).as[AnalyzedSentenceObjects]
-      val convertAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.map(analyze)
-      Ok(Json.toJson(AnalyzedSentenceObjects(convertAnalyzedSentenceObjects))).as(JSON)
-
+      val claimAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.filter(_.sentenceType == 1).map(analyze(_, true))
+      if(claimAnalyzedSentenceObjects.filter(_.deductionResultMap.filter(_._2.status).size > 0).size == claimAnalyzedSentenceObjects.size){
+        Ok(Json.toJson(AnalyzedSentenceObjects(claimAnalyzedSentenceObjects))).as(JSON)
+      }else{
+        val premiseAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.filter(_.sentenceType == 0).map(analyze(_, true))
+        if (premiseAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._1.equals("0") && y._2.status).size > 0).size == premiseAnalyzedSentenceObjects.size){
+          val allAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.map(analyze(_, false))
+          if(allAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._2.status).size > 0).size == allAnalyzedSentenceObjects.size){
+            Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ allAnalyzedSentenceObjects.filter(_.sentenceType == 1)))).as(JSON)
+          }else{
+            Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects))).as(JSON)
+          }
+        }else{
+          Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects))).as(JSON)
+        }
+      }
     }catch {
       case e: Exception => {
         logger.error(e.toString, e)
@@ -55,16 +68,16 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }
 
+
   /**
    * This function analyzes whether the entered text exactly matches.　
    * @param aso
    * @return
    */
-  private def analyze(aso:AnalyzedSentenceObject): AnalyzedSentenceObject ={
+  private def analyze(aso:AnalyzedSentenceObject, claimCheck:Boolean): AnalyzedSentenceObject ={
     val (searchResults, propositionIds) = aso.edgeList.foldLeft((List.empty[List[Neo4jRecordMap]], List.empty[String])){
       (acc, x) => analyzeGraphKnowledge(x, aso.nodeMap, aso.sentenceType, acc)
     }
-
     if(propositionIds.size < aso.edgeList.size) return aso
       //Pick up the most frequent propositionId
     val maxFreqSize = propositionIds.groupBy(identity).mapValues(_.size).maxBy(_._2)._2
@@ -74,9 +87,32 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     //it is assumed that they match exactly. It is no longer a partial match.
     val selectedPropositionIds =  propositionIdsHavingMaxFreq.filter(x => searchResults.filter(y =>  existALlPropositionIdEqualId(x, y)).size ==  aso.edgeList.size)
     if(selectedPropositionIds.size == 0) return aso
-    val deductionResult:DeductionResult = new DeductionResult(true, selectedPropositionIds, "exact-match")
+    val status:Boolean = claimCheck match {
+      case true => {
+          selectedPropositionIds.filterNot(havePremiseNode(_)).size match {
+            case 0 => false
+            case _ => true
+          }
+      }
+      case _ => true
+    }
+    //selectedPropositions includes trivialClaimsPropositionIds
+    val deductionResult:DeductionResult = new DeductionResult(status, selectedPropositionIds, "exact-match")
     val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
     AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, updateDeductionResultMap)
+
+  }
+
+  /**
+   *
+   * @param propositionId
+   * @return
+   */
+  private def havePremiseNode(propositionId:String):Boolean = {
+    val query = "MATCH (m:PremiseNode)-[e:LogicEdge]-(n:ClaimNode) WHERE n.propositionId='%s' return m, e, n".format(propositionId)
+    val jsonStr:String = getCypherQueryResult(query, "")
+    if(jsonStr.equals("""{"records":[]}""")) false
+    else true
   }
 
   /**

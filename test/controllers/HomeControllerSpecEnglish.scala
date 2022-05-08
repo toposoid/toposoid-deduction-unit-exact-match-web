@@ -16,9 +16,13 @@
 
 package controllers
 
+import akka.util.Timeout
+import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.data.accessor.neo4j.Neo4JAccessor
+import com.ideal.linked.toposoid.common.ToposoidUtils
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
+import com.ideal.linked.toposoid.protocol.model.parser.InputSentence
 import com.ideal.linked.toposoid.sentence.transformer.neo4j.Sentence2Neo4jTransformer
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.play.PlaySpec
@@ -29,25 +33,883 @@ import play.api.libs.json.Json
 import play.api.test.Helpers.{POST, contentType, defaultAwaitTimeout, status, _}
 import play.api.test.{FakeRequest, _}
 
-class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with Injecting {
+import scala.concurrent.duration.DurationInt
+
+class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with DefaultAwaitTimeout with Injecting {
+
+  before {
+    Neo4JAccessor.delete()
+  }
 
   override def beforeAll(): Unit = {
     Neo4JAccessor.delete()
-    Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
-    val knowledgeSentenceSet = KnowledgeSentenceSet(
-      List(Knowledge("Time is money.","en_US", "{}", false)),
-      List.empty[PropositionRelation],
-      List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
-      List.empty[PropositionRelation])
-    Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
   }
 
   override def afterAll(): Unit = {
     Neo4JAccessor.delete()
   }
 
+  override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
+  /*
+  "The specification1" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer .createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List.empty[Knowledge], List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
 
+  "The specification2" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List.empty[Knowledge],
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List.empty[Knowledge], List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification3" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List.empty[Knowledge], List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification4" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List.empty[Knowledge], List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification5" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification6" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification7" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification8" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification9" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification10" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification11" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification12" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification13" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification14" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}"),Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification15" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}"),Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification16" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}"),Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+  */
+  "The specification17" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}"),Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 2)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification18" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification19" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification20" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification21" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 2)
+    }
+  }
+
+  "The specification22" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification23" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}")),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 2)
+    }
+  }
+
+  "The specification24" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification25" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification26" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)), List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false), Knowledge("Time is money.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification27" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification28" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification29" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification30" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("God helps those who help themselves.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification31" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification32" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("God helps those who help themselves.","en_US", "{}", false)))
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 2)
+    }
+  }
+
+  "The specification33" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification34" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}"), Knowledge("Grasp Fortune by the forelock.","en_US", "{}")),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification35" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification36" should {
+    "returns an appropriate response" in {
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification37" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 2)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 2)
+    }
+  }
+
+  "The specification38" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+    }
+  }
+
+  "The specification39" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+
+  "The specification40" should {
+    "returns an appropriate response" in {
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false)))
+      Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("Time is money.","en_US", "{}", false)))
+      val knowledgeSentenceSet = KnowledgeSentenceSet(
+        List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)),
+        List.empty[PropositionRelation],
+        List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)),
+        List.empty[PropositionRelation])
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSet)
+      val inputSentence = Json.toJson(InputSentence(List(Knowledge("Fear often exaggerates danger.","en_US", "{}", false), Knowledge("Grasp Fortune by the forelock.","en_US", "{}", false)), List(Knowledge("Time is money.","en_US", "{}", false), Knowledge("God helps those who help themselves.","en_US", "{}", false)))).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json")
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
+    }
+  }
+  /*
   "The specification1" should {
     "returns an appropriate response" in {
       val json =
@@ -562,4 +1424,5 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
       assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
     }
   }
+  */
 }
