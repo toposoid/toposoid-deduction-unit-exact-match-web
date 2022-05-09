@@ -52,7 +52,7 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
 
-  /*
+
   "The specification1" should {
     "returns an appropriate response" in {
       Sentence2Neo4jTransformer.createGraphAuto(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)))
@@ -682,7 +682,6 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
       assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
     }
   }
-  */
 
   "The specification31" should {
     "returns an appropriate response" in {
