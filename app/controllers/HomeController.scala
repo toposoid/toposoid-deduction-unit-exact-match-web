@@ -130,29 +130,30 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val destinationNodeSurface = nodeMap.get(targetKey).getOrElse().asInstanceOf[KnowledgeBaseNode].surface
     val nodeType:String = ToposoidUtils.getNodeType(sentenceType)
 
+    val initAcc = sentenceType match{
+      case PREMISE.index => {
+        val nodeType:String = ToposoidUtils.getNodeType(CLAIM.index)
+        val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
+        logger.info(query)
+        val jsonStr:String = getCypherQueryResult(query, "")
+        //If there is even one that does not match, it is useless to search further
+        if(jsonStr.equals("""{"records":[]}""")) return (List.empty[List[Neo4jRecordMap]], List.empty[String])
+        val neo4jRecords:Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+        neo4jRecords.records.foldLeft(accParent){
+          (acc, x) => { (acc._1 :+ x, acc._2 :+ x.head.value.logicNode.propositionId)}
+        }
+      }
+      case _ => accParent
+    }
+
     val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
     logger.info(query)
     val jsonStr:String = getCypherQueryResult(query, "")
     //If there is even one that does not match, it is useless to search further
-    if(jsonStr.equals("""{"records":[]}""")) return (List.empty[List[Neo4jRecordMap]], List.empty[String])
+    if(jsonStr.equals("""{"records":[]}""")) return initAcc
     val neo4jRecords:Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-    val (searchResults, propositionIds) = neo4jRecords.records.foldLeft(accParent){
+    neo4jRecords.records.foldLeft(initAcc){
       (acc, x) => { (acc._1 :+ x, acc._2 :+ x.head.value.logicNode.propositionId)}
-    }
-    if(sentenceType == PREMISE.index){
-      val nodeType:String = ToposoidUtils.getNodeType(CLAIM.index)
-      val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
-      logger.info(query)
-      val jsonStr:String = getCypherQueryResult(query, "")
-      //If there is even one that does not match, it is useless to search further
-      if(jsonStr.equals("""{"records":[]}""")) return (List.empty[List[Neo4jRecordMap]], List.empty[String])
-      val neo4jRecords:Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-      val (searchResults2, propositionIds2) = neo4jRecords.records.foldLeft((searchResults, propositionIds)){
-        (acc, x) => { (acc._1 :+ x, acc._2 :+ x.head.value.logicNode.propositionId)}
-      }
-      (searchResults2, propositionIds2)
-    }else{
-      (searchResults, propositionIds)
     }
   }
 
