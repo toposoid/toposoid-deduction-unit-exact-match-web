@@ -1,6 +1,6 @@
 # toposoid-deduction-unit-exact-match-web Test Pattern
 
-| TestNo | Deduciton's Pattern | Registed Knowledge | PremiseMacth | CraimMatch |
+| TestNo | Deduciton's Pattern | Registed Knowledge | Premise Macth | Craim Match |
 | - | - | - | - | - |
 |1 | Claim:A | Claim:A | FALSE | TRUE |
 |2 | Claim:A | Premise:A | FALSE | FALSE |
