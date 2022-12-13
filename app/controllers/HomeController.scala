@@ -21,7 +21,7 @@ import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, Knowled
 import com.ideal.linked.toposoid.protocol.model.base.{AnalyzedSentenceObject, AnalyzedSentenceObjects, DeductionResult}
 import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jRecords}
 import com.typesafe.scalalogging.LazyLogging
-import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
+import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.{getCypherQueryResult,neo4JData2AnalyzedSentenceObjectByPropositionId, havePremiseNode}
 
 import javax.inject._
 import play.api._
@@ -48,16 +48,11 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       if(claimAnalyzedSentenceObjects.filter(_.deductionResultMap.filter(_._2.status).size > 0).size == claimAnalyzedSentenceObjects.size){
         Ok(Json.toJson(AnalyzedSentenceObjects(claimAnalyzedSentenceObjects))).as(JSON)
       }else{
-        val premiseAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.filter(_.sentenceType == 0).map(analyze(_, true))
-        if (premiseAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._1.equals("0") && y._2.status).size > 0).size == premiseAnalyzedSentenceObjects.size){
-          val allAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.map(analyze(_, false))
-          if(allAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._2.status).size > 0).size == allAnalyzedSentenceObjects.size){
-            Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ allAnalyzedSentenceObjects.filter(_.sentenceType == 1)))).as(JSON)
-          }else{
-            Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects))).as(JSON)
-          }
+        //Whether the given proposition has a premiseSentence
+        if(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.sentenceType == 0).size == 0){
+          Ok(Json.toJson(getAnalyzedSentenceObjects(analyzedSentenceObjects, claimAnalyzedSentenceObjects, false))).as(JSON)
         }else{
-          Ok(Json.toJson(AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects))).as(JSON)
+          Ok(Json.toJson(getAnalyzedSentenceObjects(analyzedSentenceObjects, claimAnalyzedSentenceObjects, true))).as(JSON)
         }
       }
     }catch {
@@ -68,6 +63,50 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }
 
+  /**
+   * Returns inference results for Premises and Claims.
+   * @param analyzedSentenceObjects
+   * @param claimAnalyzedSentenceObjects
+   * @param existPremise
+   * @return
+   */
+  private def getAnalyzedSentenceObjects(analyzedSentenceObjects:AnalyzedSentenceObjects,claimAnalyzedSentenceObjects:List[AnalyzedSentenceObject], existPremise:Boolean):AnalyzedSentenceObjects = {
+
+    val allAnalyzedSentenceObjects = analyzedSentenceObjects.analyzedSentenceObjects.map(analyze(_, false))
+    val premiseAnalyzedSentenceObjects = existPremise match {
+      case true => analyzedSentenceObjects.analyzedSentenceObjects.filter(_.sentenceType == 0).map(analyze(_, true))
+      case _ => {
+        //The given proposition does not have a premiseSentence
+        //And　only claims have a match on the graph database and it has a promise
+        if(allAnalyzedSentenceObjects.filter(x => x.deductionResultMap.get("1").get.status).size > 0){
+          //Construct AnalyzedSentenceObjects by retrieving the proposition A → B that matches only B from the graph database
+          val inducedAsos:List[AnalyzedSentenceObject] = allAnalyzedSentenceObjects.head.deductionResultMap.get("1").get.matchedPropositionIds.foldLeft(List.empty[AnalyzedSentenceObject]){
+            (acc, x) => acc :+ neo4JData2AnalyzedSentenceObjectByPropositionId(x, 0) :+ neo4JData2AnalyzedSentenceObjectByPropositionId(x, 1)
+          }
+          inducedAsos.filter(_.sentenceType == 0).map(analyze(_, true))
+        }else{
+          List.empty[AnalyzedSentenceObject]
+        }
+      }
+    }
+    //If there is no Premise, only Claim is returned.
+    if(premiseAnalyzedSentenceObjects.size == 0) return AnalyzedSentenceObjects(claimAnalyzedSentenceObjects)
+
+    if (premiseAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._1.equals("0") && y._2.status).size > 0).size == premiseAnalyzedSentenceObjects.size){
+      if(allAnalyzedSentenceObjects.filter(x => x.deductionResultMap.filter(y => y._2.status).size > 0).size == allAnalyzedSentenceObjects.size){
+        if(existPremise){
+          AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ allAnalyzedSentenceObjects.filter(_.sentenceType == 1))
+        }else{
+          //TODO:I also want to show that premise exists as a claim. Add Id to matchedPropositionIds of deductionResultMap.
+          AnalyzedSentenceObjects(allAnalyzedSentenceObjects.filter(_.sentenceType == 1))
+        }
+      }else{
+        AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects)
+      }
+    }else{
+      AnalyzedSentenceObjects(premiseAnalyzedSentenceObjects ++ claimAnalyzedSentenceObjects)
+    }
+  }
 
   /**
    * This function analyzes whether the entered text exactly matches.　
@@ -85,7 +124,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
 
     if(targetPropositionIds.size < aso.edgeList.size) return aso
-      //Pick up the most frequent propositionId
+    //Pick up the most frequent propositionId
     val maxFreqSize = targetPropositionIds.groupBy(identity).mapValues(_.size).maxBy(_._2)._2
     val propositionIdsHavingMaxFreq:List[String] = targetPropositionIds.groupBy(identity).mapValues(_.size).filter(_._2 == maxFreqSize).map(_._1).toList
     logger.debug(propositionIdsHavingMaxFreq.toString())
@@ -99,18 +138,6 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
     AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, updateDeductionResultMap)
 
-  }
-
-  /**
-   *
-   * @param propositionId
-   * @return
-   */
-  private def havePremiseNode(propositionId:String):Boolean = {
-    val query = "MATCH (m:PremiseNode)-[e:LogicEdge]-(n:ClaimNode) WHERE n.propositionId='%s' return m, e, n".format(propositionId)
-    val jsonStr:String = getCypherQueryResult(query, "")
-    if(jsonStr.equals("""{"records":[]}""")) false
-    else true
   }
 
   /**
@@ -173,7 +200,5 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   }match {
     case Failure(e) => throw e
   }
-
-
 
 }

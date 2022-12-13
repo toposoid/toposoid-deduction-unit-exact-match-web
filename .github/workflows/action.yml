@@ -12,14 +12,21 @@ env:
   PJ_VERSION: 0.4-SNAPSHOT
 jobs:
   unit-test_toposoid-deduction-unit-exact-match-web:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: Clone ${{ env.PJ_REPO }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
             repository: ${{ env.PJ_ACTOR }}/${{ env.PJ_REPO }}
       - name: Execute tests
         run: |
+            cd ${GITHUB_WORKSPACE} && cd ../
+            cd ./${{ env.PJ_REPO }}
+            bash -c "docker rm --force $(docker ps -a -q) > /dev/null 2>&1" || true
+            bash -c "docker rmi --force $(docker images -q) > /dev/null 2>&1" || true
+            docker images
+            docker system prune -f
+            docker volume prune -f
             docker build --build-arg TARGET_BRANCH=${{ env.PJ_BRANCH }} --tag ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }} -f Dockerfile-workflow .
             docker-compose -f docker-compose-workflow.yml up -d toposoid-deduction-unit-exact-match-web
             docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt headerCheck"
@@ -51,16 +58,16 @@ jobs:
             docker-compose -f docker-compose-workflow.yml exec -T ${{ env.PJ_REPO }} bash -c "cd ${{ env.PJ_REPO }} && sbt 'testOnly **.*English4'"
       - name: Docker meta
         id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
+        uses: crazy-max/ghaction-docker-meta@v3
         with:
           images: toposoid/${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}
       - name: Login to GHCR
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Build And Push Docker Image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           push: true
@@ -68,7 +75,7 @@ jobs:
           build-args: |
             TARGET_BRANCH=${{ env.PJ_BRANCH }}
       - name: Build And Push Docker Image For Test
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           file: Dockerfile-smallspec
