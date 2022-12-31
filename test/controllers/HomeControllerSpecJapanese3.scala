@@ -22,7 +22,7 @@ import com.ideal.linked.data.accessor.neo4j.Neo4JAccessor
 import com.ideal.linked.toposoid.common.ToposoidUtils
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
-import com.ideal.linked.toposoid.protocol.model.parser.InputSentence
+import com.ideal.linked.toposoid.protocol.model.parser.{InputSentence, InputSentenceForParser, KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.ideal.linked.toposoid.sentence.transformer.neo4j.Sentence2Neo4jTransformer
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.play.PlaySpec
@@ -52,12 +52,37 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
+  val sentenceA = "案ずるより産むが易し。"
+  val sentenceB = "思い立ったが吉日。"
+  val sentenceC = "時は金なり。"
+  val sentenceD = "人事を尽くして天命を待つ。"
+
+  def registSingleClaim(knowledgeForParser:KnowledgeForParser): Unit = {
+    val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+      List.empty[KnowledgeForParser],
+      List.empty[PropositionRelation],
+      List(knowledgeForParser),
+      List.empty[PropositionRelation])
+    Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+  }
+
 
   "The specification21" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false)))
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("時は金なり。","ja_JP", "{}", false)))
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+      val propositionId1 = UUID.random.toString
+      val propositionId2 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2))
+      registSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge3))
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
+
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -74,13 +99,25 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification22" should {
     "returns an appropriate response" in {
-      val knowledgeSentenceSet = KnowledgeSentenceSet(
-        List(Knowledge("案ずるより産むが易し。","ja_JP", "{}")),
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val sentenceId3 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+
+      val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+        List(KnowledgeForParser(propositionId1, sentenceId1, knowledge1)),
         List.empty[PropositionRelation],
-        List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}")),
-        List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(UUID.random.toString, knowledgeSentenceSet)
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+        List(KnowledgeForParser(propositionId1, sentenceId2, knowledge2), KnowledgeForParser(propositionId1, sentenceId3, knowledge3)),
+        List(PropositionRelation("AND", 0,1)))
+
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -97,14 +134,28 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification23" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)))
-      val knowledgeSentenceSet = KnowledgeSentenceSet(
-        List(Knowledge("案ずるより産むが易し。","ja_JP", "{}")),
+      val propositionId1 = UUID.random.toString
+      val propositionId2 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val sentenceId3 = UUID.random.toString
+      val sentenceId4 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+
+      val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+        List(KnowledgeForParser(propositionId2, sentenceId2, knowledge1)),
         List.empty[PropositionRelation],
-        List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}")),
-        List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(UUID.random.toString, knowledgeSentenceSet)
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+        List(KnowledgeForParser(propositionId2, sentenceId3, knowledge2), KnowledgeForParser(propositionId2, sentenceId4, knowledge3)),
+        List(PropositionRelation("AND", 0,1)))
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -121,13 +172,23 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification24" should {
     "returns an appropriate response" in {
-      val knowledgeSentenceSet = KnowledgeSentenceSet(
-        List(Knowledge("案ずるより産むが易し。","ja_JP", "{}")),
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+        List(KnowledgeForParser(propositionId1, sentenceId1, knowledge1)),
         List.empty[PropositionRelation],
-        List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false)),
+        List(KnowledgeForParser(propositionId1, sentenceId2, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(UUID.random.toString, knowledgeSentenceSet)
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -144,14 +205,27 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification25" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)))
-      val knowledgeSentenceSet = KnowledgeSentenceSet(
-        List(Knowledge("案ずるより産むが易し。","ja_JP", "{}")),
+      val propositionId1 = UUID.random.toString
+      val propositionId2 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val sentenceId3 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+
+      val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+        List(KnowledgeForParser(propositionId2, sentenceId2, knowledge1)),
         List.empty[PropositionRelation],
-        List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false)),
+        List(KnowledgeForParser(propositionId2, sentenceId3, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(UUID.random.toString, knowledgeSentenceSet)
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -162,20 +236,33 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
       assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+      //assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
     }
   }
 
   "The specification26" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)))
-      val knowledgeSentenceSet = KnowledgeSentenceSet(
-        List(Knowledge("案ずるより産むが易し。","ja_JP", "{}")),
+      val propositionId1 = UUID.random.toString
+      val propositionId2 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val sentenceId2 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+
+      val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
+        List(KnowledgeForParser(propositionId2, sentenceId2, knowledge1)),
         List.empty[PropositionRelation],
-        List(Knowledge("時は金なり。","ja_JP", "{}", false)),
+        List(KnowledgeForParser(propositionId2, sentenceId2, knowledge3)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(UUID.random.toString, knowledgeSentenceSet)
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false), Knowledge("時は金なり。","ja_JP", "{}", false)))).toString()
+      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser)
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -186,14 +273,27 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
       assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+      //assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
     }
   }
 
   "The specification27" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false)))
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false), Knowledge("思い立ったが吉日。","ja_JP", "{}", false)), List(Knowledge("時は金なり。","ja_JP", "{}", false), Knowledge("人事を尽くして天命を待つ。","ja_JP", "{}", false)))).toString()
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentenceD,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge4))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
+
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -210,8 +310,20 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification28" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("思い立ったが吉日。","ja_JP", "{}", false)))
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false), Knowledge("思い立ったが吉日。","ja_JP", "{}", false)), List(Knowledge("時は金なり。","ja_JP", "{}", false), Knowledge("人事を尽くして天命を待つ。","ja_JP", "{}", false)))).toString()
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentenceD,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2))
+
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge4))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
+
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -228,8 +340,19 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification29" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("時は金なり。","ja_JP", "{}", false)))
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false), Knowledge("思い立ったが吉日。","ja_JP", "{}", false)), List(Knowledge("時は金なり。","ja_JP", "{}", false), Knowledge("人事を尽くして天命を待つ。","ja_JP", "{}", false)))).toString()
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentenceD,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge3))
+
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge4))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
@@ -246,8 +369,20 @@ class HomeControllerSpecJapanese3 extends PlaySpec with BeforeAndAfter with Befo
 
   "The specification30" should {
     "returns an appropriate response" in {
-      Sentence2Neo4jTransformer.createGraphAuto(List(UUID.random.toString), List(Knowledge("人事を尽くして天命を待つ。","ja_JP", "{}", false)))
-      val inputSentence = Json.toJson(InputSentence(List(Knowledge("案ずるより産むが易し。","ja_JP", "{}", false), Knowledge("思い立ったが吉日。","ja_JP", "{}", false)), List(Knowledge("時は金なり。","ja_JP", "{}", false), Knowledge("人事を尽くして天命を待つ。","ja_JP", "{}", false)))).toString()
+      val propositionId1 = UUID.random.toString
+      val sentenceId1 = UUID.random.toString
+      val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentenceD,"ja_JP", "{}", false)
+
+      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge4))
+
+      val propositionIdForInference = UUID.random.toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge4))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
+
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_JP_WEB_HOST"), "9001", "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
