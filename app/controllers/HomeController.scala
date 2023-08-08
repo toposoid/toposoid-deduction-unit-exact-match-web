@@ -18,7 +18,7 @@ package controllers
 
 import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils}
 import com.ideal.linked.toposoid.deduction.common.{AnalyzedSentenceObjectUtils, FacadeForAccessNeo4J}
-import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
+import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode, LocalContextForFeature}
 import com.ideal.linked.toposoid.protocol.model.base.{AnalyzedSentenceObject, AnalyzedSentenceObjects, DeductionResult}
 import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jRecords}
 import com.typesafe.scalalogging.LazyLogging
@@ -62,14 +62,14 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   private def analyze(aso:AnalyzedSentenceObject): AnalyzedSentenceObject ={
 
     val (searchResults, propositionIds) = aso.edgeList.foldLeft((List.empty[List[Neo4jRecordMap]], List.empty[String])){
-      (acc, x) => analyzeGraphKnowledge(x, aso.nodeMap, aso.sentenceType, acc)
+      (acc, x) => analyzeGraphKnowledge(x, aso.nodeMap, aso.knowledgeFeatureNode.sentenceType, acc) 
     }
     if(propositionIds.size == 0) return aso
 
-    if(aso.sentenceType == 0){
+    if(aso.knowledgeFeatureNode.sentenceType == 0){
       //f the proposition is premise, check only if the same proposition exists as claim
       checkFinal(propositionIds, aso, searchResults)
-    }else if(aso.sentenceType == 1){
+    }else if(aso.knowledgeFeatureNode.sentenceType == 1){
       //If the proposition is a claim, check whether the proposition holds only as a claim or through premise.
       val onlyClaimPropositionIds = propositionIds.filterNot(havePremiseNode(_))
       if (onlyClaimPropositionIds.size > 0){
@@ -79,7 +79,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         //The case where the proposition (claim) becomes true via premis in knowledge base
         val claimHavingPremisePropositionIds = propositionIds.filter(havePremiseNode(_))
         val checkedPremiseAso =  checkClaimHavingPremise(claimHavingPremisePropositionIds.distinct, aso)
-        if(checkedPremiseAso.deductionResultMap.get(aso.sentenceType.toString).get.matchedPropositionIds.size > 0){
+        if(checkedPremiseAso.deductionResultMap.get(aso.knowledgeFeatureNode.sentenceType.toString).get.matchedPropositionIds.size > 0){
           checkFinal(claimHavingPremisePropositionIds, checkedPremiseAso, searchResults)
         }else{
           aso
@@ -99,7 +99,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   private def checkClaimHavingPremise(targetPropositionIds:List[String], aso:AnalyzedSentenceObject):AnalyzedSentenceObject ={
     for(propositionId <- targetPropositionIds){
       val updateAso = checkClaimHavingPremiseImpl(propositionId, aso)
-      if(updateAso.deductionResultMap.get(aso.sentenceType.toString).get.matchedPropositionIds.size > 0) return updateAso
+      if(updateAso.deductionResultMap.get(aso.knowledgeFeatureNode.sentenceType.toString).get.matchedPropositionIds.size > 0) return updateAso
     }
     aso
   }
@@ -129,17 +129,17 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
             if (sentenceInfo1.get(1).get.sentence.equals(sentenceInfo2.get(0).get.sentence)) {
               val coveredPropositionIds = List(sentenceInfo1.get(1).get.propositionId, sentenceInfo2.get(0).get.propositionId)
               //Here, only the proposalId is added without outputting the final result. Leave the final decision to the checkFinal function
-              val deductionResult: DeductionResult = new DeductionResult(false, aso.deductionResultMap.get(aso.sentenceType.toString).get.matchedPropositionIds ::: coveredPropositionIds, "")
-              val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
-              AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, aso.sentenceId, aso.lang, updateDeductionResultMap)
+              val deductionResult: DeductionResult = new DeductionResult(false, aso.deductionResultMap.get(aso.knowledgeFeatureNode.sentenceType.toString).get.matchedPropositionIds ::: coveredPropositionIds, "")
+              val updateDeductionResultMap = aso.deductionResultMap.updated(aso.knowledgeFeatureNode.sentenceType.toString, deductionResult)
+              AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeFeatureNode, updateDeductionResultMap)
             }else{
               acc
           }
         }}
       })
       //If there are multiple premises, all corresponding Claims are required
-      if(checkedAso.filter(_.deductionResultMap(aso.sentenceType.toString).matchedPropositionIds.size > 0).size == targetAnalyzedSentenceObjectsFromNeo4j.size){
-        checkedAso.filter(_.deductionResultMap(aso.sentenceType.toString).matchedPropositionIds.size > 0).head
+      if(checkedAso.filter(_.deductionResultMap(aso.knowledgeFeatureNode.sentenceType.toString).matchedPropositionIds.size > 0).size == targetAnalyzedSentenceObjectsFromNeo4j.size){
+        checkedAso.filter(_.deductionResultMap(aso.knowledgeFeatureNode.sentenceType.toString).matchedPropositionIds.size > 0).head
       }else{
         aso
       }
@@ -168,10 +168,10 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     if(coveredPropositionIds.size == 0) return aso
     val status = true
     //selectedPropositions includes trivialClaimsPropositionIds
-    val additionalPropositionIds = aso.deductionResultMap.get(aso.sentenceType.toString).get.matchedPropositionIds
+    val additionalPropositionIds = aso.deductionResultMap.get(aso.knowledgeFeatureNode.sentenceType.toString).get.matchedPropositionIds
     val deductionResult:DeductionResult = new DeductionResult(status, coveredPropositionIds:::additionalPropositionIds, "exact-match")
-    val updateDeductionResultMap = aso.deductionResultMap.updated(aso.sentenceType.toString, deductionResult)
-    AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.sentenceType, aso.sentenceId, aso.lang, updateDeductionResultMap)
+    val updateDeductionResultMap = aso.deductionResultMap.updated(aso.knowledgeFeatureNode.sentenceType.toString, deductionResult)
+    AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeFeatureNode, updateDeductionResultMap)
 
   }
 
