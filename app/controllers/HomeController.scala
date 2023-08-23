@@ -122,7 +122,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     if (targetMatchedPropositionInfoList.size < aso.edgeList.size) return aso
     //Pick up the most frequent propositionId
     val dupFreq = targetMatchedPropositionInfoList.groupBy(identity).filter(x => x._2.size >= aso.edgeList.size)
-    if(dupFreq == 0) return aso
+    if(dupFreq.size == 0) return aso
 
     val minFreqSize = dupFreq.mapValues(_.size).minBy(_._2)._2
     val propositionIdsHavingMinFreq: List[MatchedPropositionInfo] = targetMatchedPropositionInfoList.groupBy(identity).mapValues(_.size).filter(_._2 == minFreqSize).map(_._1).toList
