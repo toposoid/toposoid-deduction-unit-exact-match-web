@@ -19,10 +19,10 @@ package controllers
 import akka.util.Timeout
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.data.accessor.neo4j.Neo4JAccessor
-import com.ideal.linked.toposoid.common.ToposoidUtils
-import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, KnowledgeSentenceSet, PropositionRelation}
+import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, ToposoidUtils}
+import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
-import com.ideal.linked.toposoid.protocol.model.parser.{InputSentence, InputSentenceForParser, KnowledgeForParser, KnowledgeSentenceSetForParser}
+import com.ideal.linked.toposoid.protocol.model.parser.{InputSentenceForParser, KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.ideal.linked.toposoid.sentence.transformer.neo4j.Sentence2Neo4jTransformer
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.play.PlaySpec
@@ -30,7 +30,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Play.materializer
 import play.api.http.Status.OK
 import play.api.libs.json.Json
-import play.api.test.Helpers.{POST, contentType, defaultAwaitTimeout, status, _}
+import play.api.test.Helpers.{POST, contentType, status, _}
 import play.api.test.{FakeRequest, _}
 import io.jvm.uuid.UUID
 
@@ -78,7 +78,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -87,9 +87,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
   /*
@@ -109,7 +109,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -118,8 +118,8 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
     }
   }
   */
@@ -140,7 +140,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -149,9 +149,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -172,7 +172,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge =List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -181,9 +181,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -209,7 +209,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -218,9 +218,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -235,7 +235,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -244,9 +244,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -261,7 +261,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -270,9 +270,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -293,7 +293,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -302,9 +302,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -328,7 +328,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -337,9 +337,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 1)
     }
   }
 
@@ -358,7 +358,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -367,9 +367,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
   "The specification9" should {
@@ -384,7 +384,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -393,9 +393,9 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
 
@@ -411,7 +411,7 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("SENTENCE_PARSER_EN_WEB_HOST"), "9007", "analyze")
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze")
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json")
         .withJsonBody(Json.parse(json))
@@ -420,9 +420,10 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
       contentType(result) mustBe Some("application/json")
       val jsonResult: String = contentAsJson(result).toString()
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(jsonResult).as[AnalyzedSentenceObjects]
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("0").get.status).size == 1)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.status).size == 0)
-      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(_.deductionResultMap.get("1").get.havePremiseInGivenProposition).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(PREMISE.index) && x.deductionResult.status).size == 1)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.status).size == 0)
+      assert(analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType.equals(CLAIM.index) && x.deductionResult.havePremiseInGivenProposition).size == 0)
     }
   }
+
 }
