@@ -20,7 +20,7 @@ import com.ideal.linked.toposoid.common.{CLAIM, LOCAL, PREDICATE_ARGUMENT, PREMI
 import com.ideal.linked.toposoid.deduction.common.DeductionUnitController
 import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
-import com.ideal.linked.toposoid.protocol.model.base._
+import com.ideal.linked.toposoid.protocol.model.base.{KnowledgeBaseSideInfo, _}
 import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jRecords}
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
@@ -63,7 +63,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * @param accParent
    * @return
    */
-  def analyzeGraphKnowledge(edge: KnowledgeBaseEdge, aso:AnalyzedSentenceObject, accParent: (List[List[Neo4jRecordMap]], List[MatchedPropositionInfo], List[CoveredPropositionEdge])): (List[List[Neo4jRecordMap]], List[MatchedPropositionInfo], List[CoveredPropositionEdge]) = {
+  def analyzeGraphKnowledge(edge: KnowledgeBaseEdge, aso:AnalyzedSentenceObject, accParent: List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)]): List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)] = {
 
     val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap
     val sourceKey = edge.sourceId
@@ -78,16 +78,19 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     //If there is even one that does not match, it is useless to search further
     if (jsonStr.equals("""{"records":[]}""")) return accParent
     val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+
+
+    accParent
     neo4jRecords.records.foldLeft(accParent) {
       (acc, x) => {
-        val neo4jRecordMap = acc._1 :+ x
-        val matchedPropositionInfoList = acc._2 :+ MatchedPropositionInfo(x.head.value.localNode.get.propositionId, List(MatchedFeatureInfo(x.head.value.localNode.get.sentenceId, 1)))
         val sourceNode = CoveredPropositionNode(terminalId = sourceKey, terminalSurface = sourceNodeSurface, terminalUrl = "")
         val destinationNode = CoveredPropositionNode(terminalId = targetKey, terminalSurface = destinationNodeSurface, terminalUrl = "")
-        val coveredPropositionEdgeList = acc._3 :+ CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode)
-        (neo4jRecordMap, matchedPropositionInfoList, coveredPropositionEdgeList)
+        val knowledgeBaseSideInfo = KnowledgeBaseSideInfo(propositionId = x.head.value.localNode.get.propositionId, sentenceId = x.head.value.localNode.get.sentenceId, featureInfoList = List.empty[MatchedFeatureInfo])
+        val coveredPropositionEdge = CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode)
+        acc :+ (knowledgeBaseSideInfo, coveredPropositionEdge)
       }
     }
+
   }
 
 
