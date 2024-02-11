@@ -18,7 +18,7 @@ This microservice provides the ability to determine if the text you enter matche
   * neo4j
 
 ## Memory requirements For Standalone
-* at least 3.21G of HDD(Total required Docker Image size)
+* Required: at least 3.21G of HDD(Total required Docker Image size)
 
 
 ## Setup For Standalone
