@@ -25,7 +25,7 @@ This microservice provides the ability to determine if the text you enter matche
 ```bssh
 docker-compose up
 ```
-It takes more than 20 minutes to pull the Docker image for the first time.
+The first startup takes a long time until docker pull finishes.
 ## Usage
 ```bash
 # Please refer to the following for information on registering data to try searching.
