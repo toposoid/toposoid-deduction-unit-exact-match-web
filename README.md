@@ -17,7 +17,8 @@ This microservice provides the ability to determine if the text you enter matche
   * scala-data-accessor-neo4j-web
   * neo4j
 
-## Memory requirements For Standalone
+## Recommended Environment For Standalone
+* Required: at least 8GB of RAM
 * Required: at least 3.21G of HDD(Total required Docker Image size)
 
 
