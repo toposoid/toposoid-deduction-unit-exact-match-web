@@ -16,7 +16,7 @@
 
 package controllers
 
-import com.ideal.linked.toposoid.common.{CLAIM, LOCAL, PREDICATE_ARGUMENT, PREMISE, ToposoidUtils}
+import com.ideal.linked.toposoid.common.{CLAIM, LOCAL, PREDICATE_ARGUMENT, PREMISE, TRANSVERSAL_STATE, ToposoidUtils, TransversalState}
 import com.ideal.linked.toposoid.deduction.common.DeductionUnitController
 import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
@@ -39,17 +39,19 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * checks whether it matches logically strictly with the knowledge database, and returns the result in JSON.
    */
   def execute()  = Action(parse.json) { request =>
+    val transversalState = Json.parse(request.headers.get(TRANSVERSAL_STATE .str).get).as[TransversalState]
     try {
       val json = request.body
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json.toString).as[AnalyzedSentenceObjects]
       val asos:List[AnalyzedSentenceObject] = analyzedSentenceObjects.analyzedSentenceObjects
       val result:List[AnalyzedSentenceObject] = asos.foldLeft(List.empty[AnalyzedSentenceObject]){
-        (acc, x) => acc :+ analyze(x, acc, "exact-match", List.empty[Int])
+        (acc, x) => acc :+ analyze(x, acc, "exact-match", List.empty[Int], transversalState)
       }
+      logger.info(ToposoidUtils.formatMessageForLogger("deduction completed.", transversalState.username))
       Ok(Json.toJson(AnalyzedSentenceObjects(result))).as(JSON)
     }catch {
       case e: Exception => {
-        logger.error(e.toString, e)
+        logger.error(ToposoidUtils.formatMessageForLogger(e.toString, transversalState.username), e)
         BadRequest(Json.obj("status" -> "Error", "message" -> e.toString()))
       }
     }
@@ -63,7 +65,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * @param accParent
    * @return
    */
-  def analyzeGraphKnowledge(edge: KnowledgeBaseEdge, aso:AnalyzedSentenceObject, accParent: List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)]): List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)] = {
+  def analyzeGraphKnowledge(edge: KnowledgeBaseEdge, aso:AnalyzedSentenceObject, accParent: List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)], transversalState:TransversalState): List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)] = {
 
     val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap
     val sourceKey = edge.sourceId
@@ -73,8 +75,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 
     val nodeType: String = ToposoidUtils.getNodeType(CLAIM.index, LOCAL.index, PREDICATE_ARGUMENT.index)
     val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
-    logger.info(query)
-    val jsonStr: String = getCypherQueryResult(query, "")
+    logger.debug(query)
+    val jsonStr: String = getCypherQueryResult(query, "", transversalState)
     //If there is even one that does not match, it is useless to search further
     if (jsonStr.equals("""{"records":[]}""")) return accParent
     val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
