@@ -18,7 +18,6 @@ package controllers
 
 import akka.util.Timeout
 import com.ideal.linked.common.DeploymentConverter.conf
-import com.ideal.linked.data.accessor.neo4j.Neo4JAccessor
 import com.ideal.linked.toposoid.common.{CLAIM, PREMISE, TRANSVERSAL_STATE, ToposoidUtils, TransversalState}
 import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, PropositionRelation}
 import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
@@ -43,16 +42,16 @@ class HomeControllerSpecEnglish1 extends PlaySpec with BeforeAndAfter with Befor
 
 
   before {
-    Neo4JAccessor.delete()
+    TestUtils.deleteNeo4JAllData(transversalState)
   }
 
   override def beforeAll(): Unit = {
 
-    Neo4JAccessor.delete()
+    TestUtils.deleteNeo4JAllData(transversalState)
   }
 
   override def afterAll(): Unit = {
-    Neo4JAccessor.delete()
+    TestUtils.deleteNeo4JAllData(transversalState)
   }
 
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
