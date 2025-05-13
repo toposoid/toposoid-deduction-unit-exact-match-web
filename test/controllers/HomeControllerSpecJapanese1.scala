@@ -23,6 +23,7 @@ import com.ideal.linked.toposoid.knowledgebase.regist.model.{Knowledge, Proposit
 import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
 import com.ideal.linked.toposoid.protocol.model.parser.{InputSentenceForParser, KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.ideal.linked.toposoid.sentence.transformer.neo4j.Sentence2Neo4jTransformer
+import com.ideal.linked.toposoid.test.utils.TestUtils
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -41,15 +42,15 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
   val transversalStateJson:String = Json.toJson(transversalState).toString()
 
   before {
-    TestUtils.deleteNeo4JAllData(transversalState)
+    TestUtilsEx.deleteNeo4JAllData(transversalState)
   }
 
   override def beforeAll(): Unit = {
-    TestUtils.deleteNeo4JAllData(transversalState)
+    TestUtilsEx.deleteNeo4JAllData(transversalState)
   }
 
   override def afterAll(): Unit = {
-    TestUtils.deleteNeo4JAllData(transversalState)
+    TestUtilsEx.deleteNeo4JAllData(transversalState)
   }
 
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
@@ -59,21 +60,12 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
   val sentenceB = "思い立ったが吉日。"
   val sentenceC = "時は金なり。"
 
-  def registSingleClaim(knowledgeForParser:KnowledgeForParser): Unit = {
-    val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
-      List.empty[KnowledgeForParser],
-      List.empty[PropositionRelation],
-      List(knowledgeForParser),
-      List.empty[PropositionRelation])
-    Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
-  }
-
   "The specification1" should {
     "returns an appropriate response" in {
       val propositionId1 = UUID.random.toString
       val sentenceId1 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
@@ -104,7 +96,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
         List.empty[KnowledgeForParser],
         List.empty[PropositionRelation])
 
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
@@ -135,7 +127,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
         List.empty[PropositionRelation],
         List(KnowledgeForParser(propositionId1, sentenceId2, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
@@ -167,7 +159,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
         List.empty[PropositionRelation],
         List(KnowledgeForParser(propositionId1, sentenceId2, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge =List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -196,14 +188,14 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val sentenceId3 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}")
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}")
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
 
       val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
         List(KnowledgeForParser(propositionId2, sentenceId2, knowledge1)),
         List.empty[PropositionRelation],
         List(KnowledgeForParser(propositionId2, sentenceId3, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
 
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
@@ -230,7 +222,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val sentenceId1 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}")
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}")
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -256,7 +248,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val sentenceId1 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -288,7 +280,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
         List.empty[PropositionRelation],
         List(KnowledgeForParser(propositionId1, sentenceId2, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -317,13 +309,13 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val sentenceId3 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}")
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}")
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       val knowledgeSentenceSetForParser = KnowledgeSentenceSetForParser(
         List(KnowledgeForParser(propositionId2, sentenceId2, knowledge1)),
         List.empty[PropositionRelation],
         List(KnowledgeForParser(propositionId2, sentenceId3, knowledge2)),
         List.empty[PropositionRelation])
-      Sentence2Neo4jTransformer.createGraph(knowledgeSentenceSetForParser, transversalState)
+      TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -352,8 +344,8 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val sentenceId3 = UUID.random.toString
       val knowledge1 = Knowledge(sentenceA, "ja_JP", "{}")
       val knowledge2 = Knowledge(sentenceB, "ja_JP", "{}")
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
-      registSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
@@ -380,7 +372,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
@@ -407,7 +399,7 @@ class HomeControllerSpecJapanese1 extends PlaySpec with BeforeAndAfter with Befo
       val knowledge1 = Knowledge(sentenceA,"ja_JP", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"ja_JP", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"ja_JP", "{}", false)
-      registSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2))
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2), transversalState)
       val propositionIdForInference = UUID.random.toString
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
