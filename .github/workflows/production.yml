@@ -10,7 +10,7 @@ env:
   PJ_ACTOR: toposoid
   PJ_REPO: toposoid-deduction-unit-exact-match-web
   PJ_BRANCH: main
-  PJ_VERSION: 0.5
+  PJ_VERSION: 0.6
 jobs:
   unit-test_toposoid-deduction-unit-exact-match-web:
     runs-on: self-hosted
@@ -26,7 +26,7 @@ jobs:
             docker rm --force $(docker ps -a -q) > /dev/null 2>&1 && :
             docker rmi --force ${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :
             docker rmi --force toposoid/${{ env.PJ_REPO }}:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :
-            docker rmi --force toposoid/toposoid-scala-lib:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :                                
+            docker rmi --force toposoid/toposoid-scala-lib:${{ env.PJ_VERSION }}> /dev/null 2>&1 && :
             docker images
             docker system prune -f
             docker volume prune -f
