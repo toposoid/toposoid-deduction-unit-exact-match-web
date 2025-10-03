@@ -19,4 +19,4 @@ fi
 
 export _JAVA_OPTIONS=$_JAVA_OPTIONS
 cd /app/toposoid-deduction-unit-exact-match-web/target/universal
-toposoid-deduction-unit-exact-match-web-0.6/bin/toposoid-deduction-unit-exact-match-web
+toposoid-deduction-unit-exact-match-web-0.7-SNAPSHOT/bin/toposoid-deduction-unit-exact-match-web
