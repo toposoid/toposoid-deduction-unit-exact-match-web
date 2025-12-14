@@ -15,7 +15,6 @@ libraryDependencies += "javax.mail" % "mail" % "1.4.7" exclude("org.slf4j","slf4
 libraryDependencies += "commons-io" % "commons-io" % "2.6" exclude("org.slf4j","slf4j-api")
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.2" % Test exclude("org.slf4j","slf4j-api")
 libraryDependencies +=  "com.ideal.linked" %% "toposoid-test-utils" % "0.7-SNAPSHOT" % Test exclude("org.slf4j","slf4j-api")
-libraryDependencies += "org.apache.pekko" %% "pekko-actor" % "1.4.0" exclude("org.slf4j","slf4j-api")
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.36" 
 organizationName := "Linked Ideal LLC.[https://linked-ideal.com/]"
 startYear := Some(2021)
