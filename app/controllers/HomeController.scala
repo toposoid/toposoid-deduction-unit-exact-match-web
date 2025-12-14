@@ -26,6 +26,8 @@ import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jReco
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
 import play.api.mvc._
+import play.api.libs.json.JsValue
+
 
 import javax.inject._
 
@@ -39,7 +41,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * This function receives a parser's result as JSON,
    * checks whether it matches logically strictly with the knowledge database, and returns the result in JSON.
    */
-  def execute()  = Action(parse.json) { request =>
+  def execute():Action[JsValue] = Action(parse.json[JsValue]) { request =>
     val transversalState = Json.parse(request.headers.get(TRANSVERSAL_STATE .str).get).as[TransversalState]
     try {
       val json = request.body
@@ -71,8 +73,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap
     val sourceKey = edge.sourceId
     val targetKey = edge.destinationId
-    val sourceNodeSurface = nodeMap.get(sourceKey).getOrElse().asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
-    val destinationNodeSurface = nodeMap.get(targetKey).getOrElse().asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
+    val sourceNodeSurface = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
+    val destinationNodeSurface = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
 
     val nodeType: String = ToposoidUtils.getNodeType(CLAIM.index, LOCAL.index, PREDICATE_ARGUMENT.index)
     val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
