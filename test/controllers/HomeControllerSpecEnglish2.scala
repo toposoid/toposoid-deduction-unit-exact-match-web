@@ -33,7 +33,7 @@ import play.api.http.Status.OK
 import play.api.libs.json.Json
 import play.api.test.Helpers.{POST, contentType, status, _}
 import play.api.test.{FakeRequest, _}
-import io.jvm.uuid.UUID
+//import io.jvm.uuid.UUID
 
 import scala.concurrent.duration.DurationInt
 
@@ -63,15 +63,15 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
   
   "The specification11" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge3), transversalState)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -90,9 +90,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification12" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
@@ -102,9 +102,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List(KnowledgeForParser(propositionId1, sentenceId2, knowledge3)),
         List.empty[PropositionRelation])
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -123,9 +123,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification13" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
@@ -135,9 +135,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List(KnowledgeForParser(propositionId1, sentenceId2, knowledge3)),
         List.empty[PropositionRelation])
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -156,10 +156,10 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification14" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
-      val sentenceId3 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
+      val sentenceId3 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
@@ -169,9 +169,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List(KnowledgeForParser(propositionId1, sentenceId3, knowledge3)),
         List.empty[PropositionRelation])
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -190,12 +190,12 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification15" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val propositionId2 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
-      val sentenceId3 = UUID.random.toString
-      val sentenceId4 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val propositionId2 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
+      val sentenceId3 = java.util.UUID.randomUUID().toString
+      val sentenceId4 = java.util.UUID.randomUUID().toString
 
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
@@ -209,9 +209,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List.empty[PropositionRelation])
 
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -230,12 +230,12 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification16" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val propositionId2 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
-      val sentenceId3 = UUID.random.toString
-      val sentenceId4 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val propositionId2 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
+      val sentenceId3 = java.util.UUID.randomUUID().toString
+      val sentenceId4 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
@@ -249,9 +249,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List.empty[PropositionRelation])
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
 
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -270,14 +270,14 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification17" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val propositionId2 = UUID.random.toString
-      val propositionId3 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
-      val sentenceId3 = UUID.random.toString
-      val sentenceId4 = UUID.random.toString
-      val sentenceId5 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val propositionId2 = java.util.UUID.randomUUID().toString
+      val propositionId3 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
+      val sentenceId3 = java.util.UUID.randomUUID().toString
+      val sentenceId4 = java.util.UUID.randomUUID().toString
+      val sentenceId5 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
@@ -290,9 +290,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
         List(KnowledgeForParser(propositionId3, sentenceId5,knowledge3)),
         List.empty[PropositionRelation])
       TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -311,14 +311,14 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification17A" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val propositionId2 = UUID.random.toString
-      val propositionId3 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
-      val sentenceId2 = UUID.random.toString
-      val sentenceId3 = UUID.random.toString
-      val sentenceId4 = UUID.random.toString
-      val sentenceId5 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val propositionId2 = java.util.UUID.randomUUID().toString
+      val propositionId3 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val sentenceId2 = java.util.UUID.randomUUID().toString
+      val sentenceId3 = java.util.UUID.randomUUID().toString
+      val sentenceId4 = java.util.UUID.randomUUID().toString
+      val sentenceId5 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA, "en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB, "en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC, "en_US", "{}", false)
@@ -326,9 +326,9 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId3, sentenceId3, knowledge3), transversalState)
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -347,17 +347,17 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification18" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
 
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
 
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -376,17 +376,17 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification19" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
 
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge2), transversalState)
 
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
@@ -405,17 +405,17 @@ class HomeControllerSpecEnglish2 extends PlaySpec with BeforeAndAfter with Befor
 
   "The specification20" should {
     "returns an appropriate response" in {
-      val propositionId1 = UUID.random.toString
-      val sentenceId1 = UUID.random.toString
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
       val knowledge1 = Knowledge(sentenceA,"en_US", "{}", false)
       val knowledge2 = Knowledge(sentenceB,"en_US", "{}", false)
       val knowledge3 = Knowledge(sentenceC,"en_US", "{}", false)
 
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge3), transversalState)
 
-      val propositionIdForInference = UUID.random.toString
-      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge1))
-      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge2), KnowledgeForParser(propositionIdForInference, UUID.random.toString, knowledge3))
+      val propositionIdForInference = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge1))
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge2), KnowledgeForParser(propositionIdForInference, java.util.UUID.randomUUID().toString, knowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge)).toString()
       val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
