@@ -17,7 +17,7 @@
 
 package controllers
 
-import com.ideal.linked.toposoid.common.{CLAIM, LOCAL, PREDICATE_ARGUMENT, PREMISE, TRANSVERSAL_STATE, ToposoidUtils, TransversalState}
+import com.ideal.linked.toposoid.common.{SentenceType, ScopeType,  FeatureType, TRANSVERSAL_STATE, ToposoidUtils, TransversalState}
 import com.ideal.linked.toposoid.deduction.common.DeductionUnitController
 import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
@@ -76,7 +76,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val sourceNodeSurface = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
     val destinationNodeSurface = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
 
-    val nodeType: String = ToposoidUtils.getNodeType(CLAIM.index, LOCAL.index, PREDICATE_ARGUMENT.index)
+    val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
     val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNodeSurface, edge.caseStr, destinationNodeSurface)
     logger.debug(query)
     val jsonStr: String = getCypherQueryResult(query, "", transversalState)
