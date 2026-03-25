@@ -109,8 +109,9 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 
     
     //val knowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = List.empty[KnowledgeBaseSideInfo]
-    val knowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = (sourceKnowledgeNodes:::destinationKnowledgeNodes).map(x => {               
-      KnowledgeBaseSideInfo(propositionId=x.propositionId  , sentenceId=x.sentenceId , featureInfoList = List.empty[MatchedFeatureInfo])
+    val knowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = (sourceKnowledgeNodes:::destinationKnowledgeNodes).map(x => {   
+      //TODO:すでにある deductionUnitsを追加しないといけない。           
+      KnowledgeBaseSideInfo(propositionId=x.propositionId  , sentenceId=x.sentenceId , featureInfoList = List.empty[MatchedFeatureInfo], deductionUnits = List("exact-match"))
     }).distinct
 
     val sourceNode = CoveredPropositionNode(terminalId = edge.sourceId, terminalSurface = sourceNodeSurface, terminalUrl = "", matchedKnowledgeNodes=sourceMatchedKnowledgeNodes)

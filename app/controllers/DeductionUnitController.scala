@@ -35,13 +35,14 @@ trait DeductionUnitController extends LazyLogging {
   protected def execute(): Action[JsValue]
 
   protected def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge]
-
+  //TODO: getMergedKnowledgeBaseSideInfoは、MatchedKnowledgeNodeから作成する。
   private def getMergedKnowledgeBaseSideInfo(coveredPropositionResults: List[CoveredPropositionEdge], confirmedCoveredPropositionResults:List[CoveredPropositionResult]):List[KnowledgeBaseSideInfo] = {
     val knowledgeBaseSideInfoList = coveredPropositionResults.map(x => x.knowledgeBaseSideInfoList).flatten
     val coveredPropositionEdges = confirmedCoveredPropositionResults.map(_.coveredPropositionEdges).flatten
     val confirmedKnowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = coveredPropositionEdges.map(x => x.knowledgeBaseSideInfoList).flatten    
     knowledgeBaseSideInfoList ++ confirmedKnowledgeBaseSideInfoList
   }
+  
 
   /**
    * final check
@@ -91,8 +92,10 @@ trait DeductionUnitController extends LazyLogging {
     val status = true
     //selectedPropositions includes trivialClaimsPropositionIds
     val updatedCoveredPropositionResults2 = updatedCoveredPropositionResults.foldLeft(List.empty[CoveredPropositionResult]){
-      (acc, x) => {
-        if(x.deductionUnit.equals(deductionUnitName)){
+      (acc, x) => {   
+        //TODO: MatchedKnowledgeNodeから判定する。
+        //if(x.deductionUnit.equals(deductionUnitName)){
+        if(x.coveredPropositionEdges.filter(y => y.knowledgeBaseSideInfoList.filter(z => z.deductionUnits.contains(deductionUnitName)).size > 0).size > 0){
           //TODO:finalPropositionInfoListをcoveredPropositionEdgesのKnoledgeSideInfoに追加する必要がある。
           val updatedCoveredPropositionEdges =  x.coveredPropositionEdges.map(y => {
               CoveredPropositionEdge(
@@ -102,7 +105,7 @@ trait DeductionUnitController extends LazyLogging {
               )
             })
           acc :+ CoveredPropositionResult(
-            deductionUnit = x.deductionUnit,
+            //deductionUnit = x.deductionUnit,
             propositionId = x.propositionId,
             sentenceId = x.sentenceId,
             coveredPropositionEdges = updatedCoveredPropositionEdges)
@@ -135,7 +138,6 @@ trait DeductionUnitController extends LazyLogging {
       })
 
     val coveredPropositionResult = CoveredPropositionResult(
-      deductionUnit = deductionUnitName,
       propositionId = knowledgeBaseSemiGlobalNode.propositionId,
       sentenceId = knowledgeBaseSemiGlobalNode.sentenceId,
       coveredPropositionEdges = filteredCoveredPropositionEdges
@@ -200,7 +202,7 @@ trait DeductionUnitController extends LazyLogging {
             val propositionId = x2.head.value.localNode.get.propositionId
             val sentenceId = x2.head.value.localNode.get.sentenceId
             val matchedFeatureInfo = MatchedFeatureInfo(sentenceId, 1)
-            acc2 :+ KnowledgeBaseSideInfo(propositionId, sentenceId, List(matchedFeatureInfo))
+            acc2 :+ KnowledgeBaseSideInfo(propositionId, sentenceId, List(matchedFeatureInfo), List("exact-match"))
           }
         }
         acc ::: additionalMatchedPropositionInfo
@@ -234,8 +236,8 @@ trait DeductionUnitController extends LazyLogging {
     val pairSetList = aso.deductionResult.coveredPropositionResults.foldLeft(List.empty[Set[String]]){
         (acc, x) => {
           acc ++ x.coveredPropositionEdges.foldLeft(List.empty[Set[String]]) {
-            (acc, y) => {
-              acc :+ Set(y.sourceNode.terminalId, y.destinationNode.terminalId)
+            (acc2, y) => {
+              acc2 :+ Set(y.sourceNode.terminalId, y.destinationNode.terminalId)
             }
           }
         }
