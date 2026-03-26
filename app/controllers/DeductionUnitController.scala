@@ -36,14 +36,50 @@ trait DeductionUnitController extends LazyLogging {
 
   protected def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge]
   //TODO: getMergedKnowledgeBaseSideInfoは、MatchedKnowledgeNodeから作成する。
+  /*
   private def getMergedKnowledgeBaseSideInfo(coveredPropositionResults: List[CoveredPropositionEdge], confirmedCoveredPropositionResults:List[CoveredPropositionResult]):List[KnowledgeBaseSideInfo] = {
     val knowledgeBaseSideInfoList = coveredPropositionResults.map(x => x.knowledgeBaseSideInfoList).flatten
     val coveredPropositionEdges = confirmedCoveredPropositionResults.map(_.coveredPropositionEdges).flatten
     val confirmedKnowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = coveredPropositionEdges.map(x => x.knowledgeBaseSideInfoList).flatten    
     knowledgeBaseSideInfoList ++ confirmedKnowledgeBaseSideInfoList
   }
-  
+  */
 
+  private def getMergedKnowledgeBaseSideInfo(coveredPropositionResults: List[CoveredPropositionEdge]):List[KnowledgeBaseSideInfo] = {
+    
+    coveredPropositionResults.foldLeft(List.empty[KnowledgeBaseSideInfo]){
+      (acc, x) => {
+        
+        //同一のsentenceIdを持っているものが対象なのでフィルターする。
+        val sourceSentenceIds = x.sourceNode.isConfirmed match  {
+          case true => x.sourceNode.matchedKnowledgeNodes.map(y => y.sentenceId).toSet
+          case _ => Set()
+        }        
+        val destinationSentenceIds = x.destinationNode.isConfirmed match  {
+          case true => x.destinationNode.matchedKnowledgeNodes.map(y => y.sentenceId).toSet
+          case _ => Set()
+        }        
+        val confirmedSentenceIds  = sourceSentenceIds & destinationSentenceIds
+        val distinctMatchedKnowledgeNodes = (x.sourceNode.matchedKnowledgeNodes:::x.destinationNode.matchedKnowledgeNodes).filter(y =>{
+          confirmedSentenceIds.contains(y.sentenceId)
+        }).distinct
+
+        if(confirmedSentenceIds.size > 0){
+          val confirmedKnowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = distinctMatchedKnowledgeNodes.map(y => {
+            KnowledgeBaseSideInfo(
+              propositionId = y.propositionId,
+              sentenceId = y.sentenceId,
+              featureInfoList = y.featureInfoList,
+              deductionUnits = List.empty[String]
+            )
+          })
+          acc ::: confirmedKnowledgeBaseSideInfoList
+        }else{
+          acc
+        }
+      }
+    }
+  }
   /**
    * final check
    *
@@ -56,7 +92,7 @@ trait DeductionUnitController extends LazyLogging {
 
     //The targetMatchedPropositionInfoList contains duplicate propositionIds.
     //Pick up the most frequent propositionId
-    val mergedKnowledgeBaseSideInfo =  getMergedKnowledgeBaseSideInfo(unsettledCoveredPropositionResults, aso.deductionResult.coveredPropositionResults)
+    val mergedKnowledgeBaseSideInfo =  aso.deductionResult.evidenceKnowledgeList ::: getMergedKnowledgeBaseSideInfo(unsettledCoveredPropositionResults)
     val updatedCoveredPropositionResults = addCoveredPropositionResults(mergedKnowledgeBaseSideInfo, aso.deductionResult, unsettledCoveredPropositionResults, aso.knowledgeBaseSemiGlobalNode, deductionUnitName)
 
     val updateDeductionResult: DeductionResult = new DeductionResult(
