@@ -127,6 +127,7 @@ trait DeductionUnitController extends LazyLogging {
 
     val status = true
     //selectedPropositions includes trivialClaimsPropositionIds
+    /*
     val updatedCoveredPropositionResults2 = updatedCoveredPropositionResults.foldLeft(List.empty[CoveredPropositionResult]){
       (acc, x) => {   
         //TODO: MatchedKnowledgeNodeから判定する。
@@ -136,8 +137,7 @@ trait DeductionUnitController extends LazyLogging {
           val updatedCoveredPropositionEdges =  x.coveredPropositionEdges.map(y => {
               CoveredPropositionEdge(
                 sourceNode = y.sourceNode,
-                destinationNode = y.destinationNode,
-                knowledgeBaseSideInfoList = finalPropositionInfoList
+                destinationNode = y.destinationNode,              
               )
             })
           acc :+ CoveredPropositionResult(
@@ -150,8 +150,11 @@ trait DeductionUnitController extends LazyLogging {
         }
       }
     }
+    */
 
-    val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionResults2, mergedKnowledgeBaseSideInfo)
+
+    //val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionResults2, mergedKnowledgeBaseSideInfo)
+    val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionResults, finalPropositionInfoList)
     //val updateDeductionResult = aso.deductionResult.updated(aso.knowledgeBaseSemiGlobalNode.sentenceType.toString, deductionResult)
     AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeBaseSemiGlobalNode, deductionResult)
 
@@ -169,7 +172,14 @@ trait DeductionUnitController extends LazyLogging {
 
     val filteredCoveredPropositionEdges:List[CoveredPropositionEdge] = unsettledCoveredPropositionResults.filter(
       x => {
-        x.knowledgeBaseSideInfoList.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size > 0
+        if(x.sourceNode.isConfirmed && x.destinationNode.isConfirmed) {
+          val confirmedSourceNodeSize = x.sourceNode.matchedKnowledgeNodes.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size
+          val confirmedDestinationNodeSize = x.destinationNode.matchedKnowledgeNodes.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size
+          confirmedSourceNodeSize > 0 && confirmedDestinationNodeSize > 0
+        }else{
+          false
+        }
+        //x.knowledgeBaseSideInfoList.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size > 0
         //propositionIdsHavingMinFreq.contains(x._1.propositionId)
       })
 
@@ -348,16 +358,21 @@ trait DeductionUnitController extends LazyLogging {
         case 0 => result
         case _ => {
           //val premiseDeductionResults: List[DeductionResult] = asos.map(x => x.deductionResultMap.get(PREMISE.index.toString).get)
+          /*
           val premiseCoveredPropositionResults = premiseDeductionResults.map(x => x.coveredPropositionResults).flatten
           val premisepremiseCoveredPropositionEdges = premiseCoveredPropositionResults.map(x => x.coveredPropositionEdges).flatten
           val knowledgeBaseSideInfoList: List[KnowledgeBaseSideInfo] = premisepremiseCoveredPropositionEdges.map(x => x.knowledgeBaseSideInfoList).flatten
+          */
+          val knowledgeBaseSideInfoList = premiseDeductionResults.map(y => y.evidenceKnowledgeList).flatten
           val premisePropositionIds: Set[String] = knowledgeBaseSideInfoList.map(_.propositionId).toSet
           //val claimPropositionIds: Set[String] = result.deductionResultMap.get(CLAIM.index.toString).get.matchedPropositionInfoList.map(_.propositionId).toSet[String]
           //Depending on the conditions, the result is claim information.
-          
+          /*
           val claimCoveredPropositionResults = result.deductionResult.coveredPropositionResults
           val claimCoveredPropositionEdges = claimCoveredPropositionResults.map(x => x.coveredPropositionEdges).flatten
           val claimPropositionIds:Set[String] = claimCoveredPropositionEdges.map(_.knowledgeBaseSideInfoList.map(_.propositionId)).flatten.toSet[String]
+          */
+          val claimPropositionIds:Set[String] = result.deductionResult.evidenceKnowledgeList.map(_.propositionId).toSet
           //There must be at least one Claim that corresponds to at least one Premise proposition.
           (premisePropositionIds & claimPropositionIds).size - premisePropositionIds.size match {
             case 0 => {

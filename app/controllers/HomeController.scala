@@ -17,7 +17,7 @@
 
 package controllers
 
-import com.ideal.linked.toposoid.common.{SentenceType, ScopeType,  FeatureType, TRANSVERSAL_STATE, ToposoidUtils, TransversalState}
+import com.ideal.linked.toposoid.common.{SentenceType, ScopeType,  FeatureType, TRANSVERSAL_STATE, ToposoidUtils, TransversalState, RelationMatchState}
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseNode}
 import com.ideal.linked.toposoid.protocol.model.base.{KnowledgeBaseSideInfo, _}
 import com.ideal.linked.toposoid.protocol.model.neo4j.{Neo4jRecordMap, Neo4jRecords}
@@ -25,7 +25,7 @@ import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.libs.json.JsValue
-import controllers.RelationMatchState
+
 import javax.inject._
 
 
@@ -90,8 +90,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
               caseNameOnEdge = edge.caseStr,
               isDenialWord = x.predicateArgumentStructure.isDenialWord,
               nodeType = x.predicateArgumentStructure.nodeType,
-              featureInfoList = List.empty[MatchedFeatureInfo],
-              deductionUnit = "" //TODO:削除
+              featureInfoList = List.empty[MatchedFeatureInfo]
             )
         })
       }
@@ -109,8 +108,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
               caseNameOnEdge = edge.caseStr,
               isDenialWord = x.predicateArgumentStructure.isDenialWord,
               nodeType = x.predicateArgumentStructure.nodeType,
-              List.empty[MatchedFeatureInfo],
-              deductionUnit = "" //TODO:削除
+              List.empty[MatchedFeatureInfo]
 
             )
         })
@@ -128,7 +126,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val sourceNode = CoveredPropositionNode(terminalId = edge.sourceId, terminalSurface = sourceNodeSurface, terminalUrl = "", matchedKnowledgeNodes=sourceMatchedKnowledgeNodes, isConfirmedSource, "exact-match")
     val destinationNode = CoveredPropositionNode(terminalId = edge.destinationId, terminalSurface = destinationNodeSurface, terminalUrl = "", matchedKnowledgeNodes=destinationMatchedKnowledgeNodes, isConfirmedDestination, "exact-match")
     //val knowledgeBaseSideInfo = KnowledgeBaseSideInfo(propositionId = , sentenceId = , featureInfoList = List.empty[MatchedFeatureInfo])
-    CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode, knowledgeBaseSideInfoList = knowledgeBaseSideInfoList)
+    CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode)
   }
 
 
