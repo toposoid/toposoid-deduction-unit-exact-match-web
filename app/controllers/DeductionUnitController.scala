@@ -45,9 +45,9 @@ trait DeductionUnitController extends LazyLogging {
   }
   */
 
-  private def getMergedKnowledgeBaseSideInfo(coveredPropositionResults: List[CoveredPropositionEdge]):List[KnowledgeBaseSideInfo] = {
+  private def getMergedKnowledgeBaseSideInfo(coveredPropositionEdges: List[CoveredPropositionEdge]):List[KnowledgeBaseSideInfo] = {
     
-    coveredPropositionResults.foldLeft(List.empty[KnowledgeBaseSideInfo]){
+    coveredPropositionEdges.foldLeft(List.empty[KnowledgeBaseSideInfo]){
       (acc, x) => {
         
         //同一のsentenceIdを持っているものが対象なのでフィルターする。
@@ -172,9 +172,10 @@ trait DeductionUnitController extends LazyLogging {
 
   private def updateCoveredPropositionEdges(mergedKnowledgeBaseSideInfo:List[KnowledgeBaseSideInfo], aso: AnalyzedSentenceObject, unsettledCoveredPropositionEdges:List[CoveredPropositionEdge], deductionUnitName:String, transversalState:TransversalState) :(List[CoveredPropositionEdge],List[KnowledgeBaseSideInfo])  ={
     //TODO:もっと良い方法がないか見直し
-    
+    //もし同じ表層かつ同じ関係性も持つエッジが一つの文章で重複して存在する場合、単純にpropositionIdをユニークにしても命題のエッジの数を被覆したとは言えない。重複も含めてカウントする必要がある。
     //val dupFreq = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).filter(x => x._2.size > deductionResult.coveredPropositionEdges.size)
-    val dupFreq = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).filter(x => x._2.size >= aso.edgeList.size)
+    //全てのエッジが何か対応があるという条件がないとダメっていうのは良いんだっけか？ 部分的に一致しているという情報は残さない？
+    val dupFreq = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).filter(x => x._2.size >= aso.nodeMap.size)
     if(dupFreq.size == 0) return (aso.deductionResult.coveredPropositionEdges, aso.deductionResult.evidenceKnowledgeList)
     val minFreqSize = dupFreq.mapValues(_.size).minBy(_._2)._2
   
