@@ -20,7 +20,7 @@ package controllers
 import com.ideal.linked.toposoid.common.{SentenceType, TransversalState, ToposoidUtils}
 //import com.ideal.linked.toposoid.deduction.common.FacadeForAccessNeo4J.getCypherQueryResult
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseEdge, KnowledgeBaseSemiGlobalNode}
-import com.ideal.linked.toposoid.protocol.model.base.{CoveredPropositionResult, _}
+import com.ideal.linked.toposoid.protocol.model.base.{_}
 import com.ideal.linked.toposoid.protocol.model.neo4j.Neo4jRecords
 import com.typesafe.scalalogging.LazyLogging
 import play.api.libs.json.{JsValue, Json}
@@ -88,17 +88,18 @@ trait DeductionUnitController extends LazyLogging {
    * @param searchResults
    * @return
    */
-  private def checkFinal(aso: AnalyzedSentenceObject, deductionUnitName:String, unsettledCoveredPropositionResults:List[CoveredPropositionEdge], transversalState:TransversalState ): AnalyzedSentenceObject = {
+  private def checkFinal(aso: AnalyzedSentenceObject, deductionUnitName:String, unsettledCoveredPropositionEdges:List[CoveredPropositionEdge], transversalState:TransversalState ): AnalyzedSentenceObject = {
 
     //The targetMatchedPropositionInfoList contains duplicate propositionIds.
     //Pick up the most frequent propositionId
-    val mergedKnowledgeBaseSideInfo =  aso.deductionResult.evidenceKnowledgeList ::: getMergedKnowledgeBaseSideInfo(unsettledCoveredPropositionResults)
-    val updatedCoveredPropositionResults = addCoveredPropositionResults(mergedKnowledgeBaseSideInfo, aso.deductionResult, unsettledCoveredPropositionResults, aso.knowledgeBaseSemiGlobalNode, deductionUnitName)
-
+    val mergedKnowledgeBaseSideInfo =  aso.deductionResult.evidenceKnowledgeList ::: getMergedKnowledgeBaseSideInfo(unsettledCoveredPropositionEdges)
+    //val updatedCoveredPropositionResults = addCoveredPropositionResults(mergedKnowledgeBaseSideInfo, aso.deductionResult, unsettledCoveredPropositionResults, aso.knowledgeBaseSemiGlobalNode, deductionUnitName)
+    val (updatedCoveredPropositionEdges, updatedKnowledgeBaseSideInfo) = updateCoveredPropositionEdges(mergedKnowledgeBaseSideInfo, aso, unsettledCoveredPropositionEdges, deductionUnitName, transversalState)
+    /*
     val updateDeductionResult: DeductionResult = new DeductionResult(
       aso.deductionResult.status,
       aso.deductionResult.authenticityType,
-      updatedCoveredPropositionResults,
+      updatedCoveredPropositionEdges,
       mergedKnowledgeBaseSideInfo,
       aso.deductionResult.havePremiseInGivenProposition
     )
@@ -122,10 +123,18 @@ trait DeductionUnitController extends LazyLogging {
       case 0 => propositionInfoListOnlyClaim
       case _ => propositionInfoListOnlyClaim ::: checkClaimHavingPremise(propositionInfoListHavingPremise, transversalState)
     }
-
-    if (finalPropositionInfoList.size == 0) return updateAso
-
-    val status = true
+    */
+    if (updatedKnowledgeBaseSideInfo.size == 0){
+      val deductionResult: DeductionResult = new DeductionResult(aso.deductionResult.status, aso.deductionResult.authenticityType, updatedCoveredPropositionEdges, updatedKnowledgeBaseSideInfo)
+      AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeBaseSemiGlobalNode, deductionResult)
+    }else{
+      val status = true
+      val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionEdges, updatedKnowledgeBaseSideInfo)
+      //val updateDeductionResult = aso.deductionResult.updated(aso.knowledgeBaseSemiGlobalNode.sentenceType.toString, deductionResult)
+      AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeBaseSemiGlobalNode, deductionResult)
+    }
+  
+    
     //selectedPropositions includes trivialClaimsPropositionIds
     /*
     val updatedCoveredPropositionResults2 = updatedCoveredPropositionResults.foldLeft(List.empty[CoveredPropositionResult]){
@@ -154,12 +163,59 @@ trait DeductionUnitController extends LazyLogging {
 
 
     //val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionResults2, mergedKnowledgeBaseSideInfo)
-    val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionResults, finalPropositionInfoList)
+    /*
+    val deductionResult: DeductionResult = new DeductionResult(status,AuthenticityType.TRUE.index, updatedCoveredPropositionEdges, finalPropositionInfoList)
     //val updateDeductionResult = aso.deductionResult.updated(aso.knowledgeBaseSemiGlobalNode.sentenceType.toString, deductionResult)
     AnalyzedSentenceObject(aso.nodeMap, aso.edgeList, aso.knowledgeBaseSemiGlobalNode, deductionResult)
-
+    */
   }
 
+  private def updateCoveredPropositionEdges(mergedKnowledgeBaseSideInfo:List[KnowledgeBaseSideInfo], aso: AnalyzedSentenceObject, unsettledCoveredPropositionEdges:List[CoveredPropositionEdge], deductionUnitName:String, transversalState:TransversalState) :(List[CoveredPropositionEdge],List[KnowledgeBaseSideInfo])  ={
+    //TODO:もっと良い方法がないか見直し
+    
+    //val dupFreq = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).filter(x => x._2.size > deductionResult.coveredPropositionEdges.size)
+    val dupFreq = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).filter(x => x._2.size >= aso.edgeList.size)
+    if(dupFreq.size == 0) return (aso.deductionResult.coveredPropositionEdges, aso.deductionResult.evidenceKnowledgeList)
+    val minFreqSize = dupFreq.mapValues(_.size).minBy(_._2)._2
+  
+    val propositionIdsHavingMinFreq: List[String] = mergedKnowledgeBaseSideInfo.map(_.propositionId).groupBy(identity).mapValues(_.size).filter(_._2 == minFreqSize).map(_._1).toList
+    val filteredKnowledgeBaseSideInfo = mergedKnowledgeBaseSideInfo.filter(x =>  propositionIdsHavingMinFreq.contains(x.propositionId))
+    
+    val filteredCoveredPropositionEdges:List[CoveredPropositionEdge] = unsettledCoveredPropositionEdges.filter(
+      x => {
+        if(x.sourceNode.isConfirmed && x.destinationNode.isConfirmed) {
+          val confirmedSourceNodeSize = x.sourceNode.matchedKnowledgeNodes.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size
+          val confirmedDestinationNodeSize = x.destinationNode.matchedKnowledgeNodes.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size
+          confirmedSourceNodeSize > 0 && confirmedDestinationNodeSize > 0
+        }else{
+          false
+        }
+        //x.knowledgeBaseSideInfoList.filter(y => propositionIdsHavingMinFreq.contains(y.propositionId)).size > 0
+        //propositionIdsHavingMinFreq.contains(x._1.propositionId)
+      })
+
+
+    val coveredPropositionInfoList = mergedKnowledgeBaseSideInfo.filter(x =>  propositionIdsHavingMinFreq.contains(x.propositionId))
+    //Does the chosen proposalId have a premise? T
+    //he coveredPropositionInfoList contains a mixture of those that are established only by Claims and those that have Premise.
+    val propositionInfoListHavingPremise: List[KnowledgeBaseSideInfo] = coveredPropositionInfoList.filter(havePremise(_, transversalState))
+    val propositionInfoListOnlyClaim: List[KnowledgeBaseSideInfo] = coveredPropositionInfoList.filterNot(x => propositionInfoListHavingPremise.map(y => y.propositionId).contains(x.propositionId))
+
+    val finalPropositionInfoList: List[KnowledgeBaseSideInfo] = propositionInfoListHavingPremise.size match {
+      case 0 => propositionInfoListOnlyClaim
+      case _ => propositionInfoListOnlyClaim ::: checkClaimHavingPremise(propositionInfoListHavingPremise, transversalState)
+    }
+    (filteredCoveredPropositionEdges, finalPropositionInfoList)
+    /*
+    if(finalPropositionInfoList.size == 0){
+      (filteredCoveredPropositionEdges, filteredKnowledgeBaseSideInfo)
+    }else{
+      (filteredCoveredPropositionEdges, finalPropositionInfoList)
+    }
+    */
+    //(List.empty[CoveredPropositionEdge], List.empty[KnowledgeBaseSideInfo])
+  }
+  /*
   private def addCoveredPropositionResults(mergedKnowledgeBaseSideInfo:List[KnowledgeBaseSideInfo] , deductionResult:DeductionResult, unsettledCoveredPropositionResults:List[CoveredPropositionEdge], knowledgeBaseSemiGlobalNode:KnowledgeBaseSemiGlobalNode, deductionUnitName:String): List[CoveredPropositionResult] = {
 
     //TODO:もっと良い方法がないか見直し
@@ -191,6 +247,7 @@ trait DeductionUnitController extends LazyLogging {
 
     deductionResult.coveredPropositionResults :+ coveredPropositionResult
   }
+  */
   /**
    *
    * @param matchedPropositionInfo
@@ -279,6 +336,19 @@ trait DeductionUnitController extends LazyLogging {
    * @return
    */
   private def getUnsettledEdges(aso:AnalyzedSentenceObject): List[KnowledgeBaseEdge] = {
+    val pairSetList = aso.deductionResult.coveredPropositionEdges.foldLeft(List.empty[Set[String]]){
+        (acc, x) => {
+          acc :+ Set(x.sourceNode.terminalId, x.destinationNode.terminalId)
+        }
+      }
+    aso.edgeList.filterNot(x => {
+      val targetLink = Set(x.sourceId, x.destinationId)
+      pairSetList.contains(targetLink)
+    })
+  }
+
+/*
+  private def getUnsettledEdges(aso:AnalyzedSentenceObject): List[KnowledgeBaseEdge] = {
     val pairSetList = aso.deductionResult.coveredPropositionResults.foldLeft(List.empty[Set[String]]){
         (acc, x) => {
           acc ++ x.coveredPropositionEdges.foldLeft(List.empty[Set[String]]) {
@@ -293,7 +363,7 @@ trait DeductionUnitController extends LazyLogging {
       pairSetList.contains(targetLink)
     })
   }
-
+*/
   /**
    *
    * @param edge
@@ -357,21 +427,9 @@ trait DeductionUnitController extends LazyLogging {
       asos.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceType == SentenceType.PREMISE.index).size match {
         case 0 => result
         case _ => {
-          //val premiseDeductionResults: List[DeductionResult] = asos.map(x => x.deductionResultMap.get(PREMISE.index.toString).get)
-          /*
-          val premiseCoveredPropositionResults = premiseDeductionResults.map(x => x.coveredPropositionResults).flatten
-          val premisepremiseCoveredPropositionEdges = premiseCoveredPropositionResults.map(x => x.coveredPropositionEdges).flatten
-          val knowledgeBaseSideInfoList: List[KnowledgeBaseSideInfo] = premisepremiseCoveredPropositionEdges.map(x => x.knowledgeBaseSideInfoList).flatten
-          */
           val knowledgeBaseSideInfoList = premiseDeductionResults.map(y => y.evidenceKnowledgeList).flatten
           val premisePropositionIds: Set[String] = knowledgeBaseSideInfoList.map(_.propositionId).toSet
-          //val claimPropositionIds: Set[String] = result.deductionResultMap.get(CLAIM.index.toString).get.matchedPropositionInfoList.map(_.propositionId).toSet[String]
           //Depending on the conditions, the result is claim information.
-          /*
-          val claimCoveredPropositionResults = result.deductionResult.coveredPropositionResults
-          val claimCoveredPropositionEdges = claimCoveredPropositionResults.map(x => x.coveredPropositionEdges).flatten
-          val claimPropositionIds:Set[String] = claimCoveredPropositionEdges.map(_.knowledgeBaseSideInfoList.map(_.propositionId)).flatten.toSet[String]
-          */
           val claimPropositionIds:Set[String] = result.deductionResult.evidenceKnowledgeList.map(_.propositionId).toSet
           //There must be at least one Claim that corresponds to at least one Premise proposition.
           (premisePropositionIds & claimPropositionIds).size - premisePropositionIds.size match {
@@ -381,7 +439,8 @@ trait DeductionUnitController extends LazyLogging {
               val updateDeductionResult: DeductionResult = DeductionResult(
                 status = originalDeductionResult.status,
                 authenticityType = AuthenticityType.TRUE.index,
-                coveredPropositionResults = originalDeductionResult.coveredPropositionResults,
+                coveredPropositionEdges = originalDeductionResult.coveredPropositionEdges,
+                //coveredPropositionResults = originalDeductionResult.coveredPropositionResults,
                 evidenceKnowledgeList = knowledgeBaseSideInfoList,
                 havePremiseInGivenProposition = true
               )
