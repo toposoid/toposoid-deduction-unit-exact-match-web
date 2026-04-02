@@ -27,6 +27,10 @@ import play.api.mvc._
 import play.api.libs.json.JsValue
 
 import javax.inject._
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 
 /**
@@ -62,7 +66,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }
 
-  def getCoveredPropositionEdge(edge: KnowledgeBaseEdge, sourceAlias:String, destinationAlias:String, nodeMap:Map[String, KnowledgeBaseNode], neo4jRecords: Neo4jRecords, relationMatchState:RelationMatchState):CoveredPropositionEdge = {
+  private def getCoveredPropositionEdge(edge: KnowledgeBaseEdge, sourceAlias:String, destinationAlias:String, nodeMap:Map[String, KnowledgeBaseNode], neo4jRecords: Neo4jRecords, relationMatchState:RelationMatchState):CoveredPropositionEdge = {
     //一旦どちらかのノードが埋まっていれば推論を進めるものとする。
     val sourceNodeSurface = nodeMap.get(edge.sourceId).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
     val destinationNodeSurface = nodeMap.get(edge.destinationId).get.asInstanceOf[KnowledgeBaseNode].predicateArgumentStructure.surface
@@ -139,71 +143,87 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * @return
    */
   
-  def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
-    
-    val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap    
-    edges.foldLeft(List.empty[CoveredPropositionEdge]){
-      (acc, edge) => {        
-        val sourceKey = edge.sourceId
-        val targetKey = edge.destinationId
-        val sourceAlias = "n1"
-        val destinationAlias = "n2"
-        val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
-        val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
+    private def analyzeEdge(edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], transversalState:TransversalState):Option[CoveredPropositionEdge] = {
+      val sourceKey = edge.sourceId
+      val targetKey = edge.destinationId
+      val sourceAlias = "n1"
+      val destinationAlias = "n2"
+      val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
+      val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
 
-        val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
-        //エッジの両側ノードで厳格に一致するものがあるかどうか
-        val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)
-        logger.debug(query)
-        val jsonStr: String = getCypherQueryResult(query, "", transversalState)
-        //If there is even one that does not match, it is useless to search further
-        if (!jsonStr.equals("""{"records":[]}""")) {
-          //ヒットするものがある場合
+      val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
+      //エッジの両側ノードで厳格に一致するものがあるかどうか
+      val query = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)      
+      logger.debug(query)
+      val jsonStr: String = getCypherQueryResult(query, "", transversalState)
+      //If there is even one that does not match, it is useless to search further
+      if (!jsonStr.equals("""{"records":[]}""")) {
+        //ヒットするものがある場合
+        val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+        Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH))
+      }else{
+        //ヒットするものがない場合
+        //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
+      
+        //val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.normalizedName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName)
+        val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface='%s' AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
+
+        logger.debug(querySourceOnly)
+        val querySourceOnlyResultJson: String = getCypherQueryResult(querySourceOnly, "", transversalState)
+        if (!querySourceOnlyResultJson.equals("""{"records":[]}""")) {
+          //Destinationを別ノードで置き換えられる可能性あり
           val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-          acc :+ getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH)
-        } 
-        else {
-          
-          //ヒットするものがない場合
-          //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
-        
-          //val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.normalizedName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName)
-          val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface='%s' AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
-
-          logger.debug(querySourceOnly)
-          val querySourceOnlyResultJson: String = getCypherQueryResult(querySourceOnly, "", transversalState)
-          if (!querySourceOnlyResultJson.equals("""{"records":[]}""")) {
-            //Destinationを別ノードで置き換えられる可能性あり
+          Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))         
+        } else {            
+          //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
+          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]-(n2:%s) WHERE n2.surface='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.normalizedName, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
+          logger.debug(queryTargetOnly)
+          val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
+          if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
+            //Sourceを別ノードで置き換えられる可能性あり
             val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-            acc :+ getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY)            
-          } else {            
-            //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
-            val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]-(n2:%s) WHERE n2.surface='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.normalizedName, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
+            Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY))                       
+          } else {
+            //もしTargetとSourceを別ノードで置き換えられれば、OK
+            val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]-(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
             logger.debug(queryTargetOnly)
             val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
             if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
-              //Sourceを別ノードで置き換えられる可能性あり
               val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-              acc :+ getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY)                          
-            } else {
-              //もしTargetとSourceを別ノードで置き換えられれば、OK
-              val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]-(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
-              logger.debug(queryTargetOnly)
-              val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
-              if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
-                val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-                acc :+ getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH)                            
-              }else{
-                //推論不能
-                //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
-                acc
-              }
-              //checkNode(sourceNode, targetNode, caseName, NOT_MATCHED, sentenceType, transversalState)              
+              Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH))                          
+            }else{
+              //推論不能
+              //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
+              None
             }            
-          }           
-        }
+          }            
+        }                           
+      }
+  }
+
+  /**
+   * This function is a sub-function of analyze
+   *
+   * @param nodeMap
+   * @param sentenceType
+   * @param accParent
+   * @return
+   */
+  
+  def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
+    
+    val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap    
+
+    val futures: List[Future[Option[CoveredPropositionEdge]]] = edges.foldLeft(List.empty[Future[Option[CoveredPropositionEdge]]]){
+      (acc, edge) => {
+        acc :+ Future(analyzeEdge(edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], transversalState))
       }
     }
+    
+    val combinedFuture: Future[List[Option[CoveredPropositionEdge]]] = Future.sequence(futures)
+    val result = Await.result(combinedFuture, Duration.Inf)
+    result.flatten
+    
   }
 }
 
