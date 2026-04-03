@@ -4,4 +4,5 @@
 # ~~~~
 
 # An example controller showing a sample home page
-POST    /execute                       controllers.HomeController.execute()
+POST    /execute                        controllers.HomeController.execute()
+POST    /analyzeGraphKnowledge          controllers.HomeController.analyzeGraphKnowledge()

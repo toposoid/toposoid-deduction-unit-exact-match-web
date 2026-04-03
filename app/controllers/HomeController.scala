@@ -222,6 +222,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     
     val combinedFuture: Future[List[Option[CoveredPropositionEdge]]] = Future.sequence(futures)
     val result = Await.result(combinedFuture, Duration.Inf)
+    logger.info(ToposoidUtils.formatMessageForLogger("Basic edge analysis completed.", transversalState.userId))
     result.flatten
     
   }
