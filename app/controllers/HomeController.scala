@@ -31,13 +31,14 @@ import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-
+import scala.util.{Failure, Success, Try}
+import com.ideal.linked.common.DeploymentConverter.conf
 
 /**
  * This controller creates an `Action` to determine if the entered text matches exactly with the knowledge graph
  */
 @Singleton
-class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with DeductionUnitController with LazyLogging {
+class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with LazyLogging {
 
   /**
    * This function receives a parser's result as JSON,
@@ -49,21 +50,35 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       val json = request.body
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json.toString).as[AnalyzedSentenceObjects]
       val asos:List[AnalyzedSentenceObject] = analyzedSentenceObjects.analyzedSentenceObjects
-      val result:List[AnalyzedSentenceObject] = asos.foldLeft(List.empty[AnalyzedSentenceObject]){
-        (acc, x) => {
-          acc :+ analyze(x, acc, "exact-match", List.empty[Int], transversalState)
-          //acc
+      val result:List[VerifyingEdges] = asos.foldLeft(List.empty[VerifyingEdges]){
+        (acc, aso) => {          
+          acc :+ VerifyingEdges(
+            propositionId = aso.knowledgeBaseSemiGlobalNode.propositionId,
+            sentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId,
+            coveredPropositionEdges = analyzeGraphKnowledge(getUnsettledEdges(aso), aso, transversalState)
+          )
         }
       }
-      logger.info(ToposoidUtils.formatMessageForLogger("deduction completed.", transversalState.userId))
-      
-      Ok(Json.toJson(AnalyzedSentenceObjects(result, analyzedSentenceObjects.deductionConfiguration))).as(JSON)
+      logger.info(ToposoidUtils.formatMessageForLogger("Basic edge analysis completed.", transversalState.userId))      
+      Ok(Json.toJson(result)).as(JSON)
     }catch {
       case e: Exception => {
         logger.error(ToposoidUtils.formatMessageForLogger(e.toString, transversalState.userId), e)
         BadRequest(Json.obj("status" -> "Error", "message" -> e.toString()))
       }
     }
+  }
+  
+  private def getUnsettledEdges(aso:AnalyzedSentenceObject): List[KnowledgeBaseEdge] = {
+    val pairSetList = aso.deductionResult.coveredPropositionEdges.foldLeft(List.empty[Set[String]]){
+        (acc, x) => {
+          acc :+ Set(x.sourceNode.terminalId, x.destinationNode.terminalId)
+        }
+      }
+    aso.edgeList.filterNot(x => {
+      val targetLink = Set(x.sourceId, x.destinationId)
+      pairSetList.contains(targetLink)
+    })
   }
 
   private def getCoveredPropositionEdge(edge: KnowledgeBaseEdge, sourceAlias:String, destinationAlias:String, nodeMap:Map[String, KnowledgeBaseNode], neo4jRecords: Neo4jRecords, relationMatchState:RelationMatchState):CoveredPropositionEdge = {
@@ -119,7 +134,6 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
 
-    
     //val knowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = List.empty[KnowledgeBaseSideInfo]
     val knowledgeBaseSideInfoList:List[KnowledgeBaseSideInfo] = (sourceKnowledgeNodes:::destinationKnowledgeNodes).map(x => {   
       //TODO:すでにある deductionUnitsを追加しないといけない。           
@@ -210,7 +224,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    * @return
    */
   
-  def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
+  private def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
     
     val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap    
 
@@ -218,54 +232,40 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       (acc, edge) => {
         acc :+ Future(analyzeEdge(edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], transversalState))
       }
-    }
-    
+    }    
     val combinedFuture: Future[List[Option[CoveredPropositionEdge]]] = Future.sequence(futures)
-    val result = Await.result(combinedFuture, Duration.Inf)
-    logger.info(ToposoidUtils.formatMessageForLogger("Basic edge analysis completed.", transversalState.userId))
+    val result = Await.result(combinedFuture, Duration.Inf)    
     result.flatten
     
   }
+
+  private def getCypherQueryResult(query:String, target:String, transversalState:TransversalState): String = Try{
+    val retryNum =  conf.getInt("retryCallMicroserviceNum") -1
+    for (i <- 0 to retryNum) {
+      //val result:String  = this.getCypherQueryResultImpl(query, target, transversalState)
+      val json = """{ "query":"%s", "target":"%s" }""".format(query, target)
+      val result:String  = ToposoidUtils.callComponent(
+        json,
+        conf.getString("TOPOSOID_GRAPHDB_WEB_HOST"),
+        conf.getString("TOPOSOID_GRAPHDB_WEB_PORT"),
+        "getQueryFormattedResult",
+        transversalState
+      )
+      if (result != "{}") {
+        return result
+      }
+      if(i == retryNum) throw new Exception("Results were not returned properly")
+    }
+    ""
+  }match {
+    case Success(s) => s
+    case Failure(e) => throw e
+  }
+
+
 }
 
 
-/*
-    accParent
-    neo4jRecords.records.foldLeft(accParent) {
-      (acc, x) => {
-        //sentenceId:String, nodeId:String, caseNameOnEdge:String, isDenialWord:Boolean, nodeType: Int
-        val sourceNode = CoveredPropositionNode(terminalId = sourceKey, terminalSurface = sourceNodeSurface, terminalUrl = "")
-        val destinationNode = CoveredPropositionNode(terminalId = targetKey, terminalSurface = destinationNodeSurface, terminalUrl = "")
-        val knowledgeBaseSideInfo = KnowledgeBaseSideInfo(propositionId = x.head.value.localNode.get.propositionId, sentenceId = x.head.value.localNode.get.sentenceId, featureInfoList = List.empty[MatchedFeatureInfo])
-        val coveredPropositionEdge = CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode)
-        acc :+ (knowledgeBaseSideInfo, coveredPropositionEdge)
-      
-      }
-    }
 
 
-  }
-  
-  private def checkNode(sourceNode: KnowledgeBaseNode, targetNode: KnowledgeBaseNode, caseName: String, relationMatchState: RelationMatchState, sentenceType: Int, transversalState:TransversalState): List[(KnowledgeBaseSideInfo, CoveredPropositionEdge)] = {
 
-    val nodeType: String = ToposoidUtils.getNodeType(sentenceType, LOCAL.index, PREDICATE_ARGUMENT.index)
-    val query = relationMatchState match {
-      case MATCHED_SOURCE_NODE_ONLY => {
-        "MATCH (n1:%s)-[e]-(n2:%s)<-[se:SynonymEdge]-(sn2:SynonymNode) WHERE n1.normalizedName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' AND n2.isDenialWord='%s' AND sn2.nodeName='%s' RETURN n1, e, sn2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName, targetNode.predicateArgumentStructure.isDenialWord, targetNode.predicateArgumentStructure.normalizedName)
-      }
-      case MATCHED_TARGET_NODE_ONLY => {
-        "MATCH (sn1:SynonymNode)-[se:SynonymEdge]->(n1:%s)-[e]-(n2:%s) WHERE sn1.nodeName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' AND n2.normalizedName='%s' AND n2.isDenialWord='%s' RETURN sn1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName, targetNode.predicateArgumentStructure.normalizedName, targetNode.predicateArgumentStructure.isDenialWord)
-      }
-      case NOT_MATCHED => {
-        "MATCH (sn1:SynonymNode)-[se1:SynonymEdge]->(n1:%s)-[e]-(n2:%s)<-[se2:SynonymEdge]-(sn2:SynonymNode) WHERE sn1.nodeName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' AND n2.isDenialWord='%s' AND sn2.nodeName='%s' RETURN sn1, e, sn2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName, targetNode.predicateArgumentStructure.isDenialWord, targetNode.predicateArgumentStructure.normalizedName)
-      }
-    }
-    val resultJson: String = getCypherQueryResult(query, "", transversalState)
-    logger.debug(query)
-    if (resultJson.equals("""{"records":[]}""")) {
-      List.empty[(KnowledgeBaseSideInfo, CoveredPropositionEdge)]
-    } else {
-      getKnowledgeBaseSideInfo(Json.parse(resultJson).as[Neo4jRecords], sourceNode, targetNode)
-    }
-  }
-*/
