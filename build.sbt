@@ -5,7 +5,7 @@ organization := "com.ideal.linked"
 version := "0.7-SNAPSHOT"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala).enablePlugins(AutomateHeaderPlugin)
-
+val PekkoVersion = "1.1.5"
 scalaVersion := "3.3.6"
 libraryDependencies += guice
 libraryDependencies += "com.ideal.linked" %% "scala-common" % "0.7-SNAPSHOT" exclude("org.slf4j","slf4j-api")
