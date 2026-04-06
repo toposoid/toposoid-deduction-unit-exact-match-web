@@ -187,26 +187,26 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         val querySourceOnlyResultJson: String = getCypherQueryResult(querySourceOnly, "", transversalState)
         if (!querySourceOnlyResultJson.equals("""{"records":[]}""")) {
           //Destinationを別ノードで置き換えられる可能性あり
-          val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+          val neo4jRecords: Neo4jRecords = Json.parse(querySourceOnlyResultJson).as[Neo4jRecords]
           logger.debug(ToposoidUtils.formatMessageForLogger("check2", transversalState.userId))         
           Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))           
         } else {            
           //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
-          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.normalizedName, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
+          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
           logger.debug(queryTargetOnly)
           val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
           if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
             //Sourceを別ノードで置き換えられる可能性あり
-            val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+            val neo4jRecords: Neo4jRecords = Json.parse(queryTargetOnlyResultJson).as[Neo4jRecords]
             logger.debug(ToposoidUtils.formatMessageForLogger("check3", transversalState.userId))                       
             Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY))             
           } else {
             //もしTargetとSourceを別ノードで置き換えられれば、OK
-            val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
-            logger.debug(queryTargetOnly)
-            val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
-            if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
-              val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
+            val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
+            logger.debug(queryBothReplacement)
+            val queryBothReplacementResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
+            if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
+              val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
               logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
               Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH))                    
             }else{
