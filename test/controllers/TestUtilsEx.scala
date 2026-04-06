@@ -24,6 +24,8 @@ import com.ideal.linked.toposoid.protocol.model.neo4j.Neo4jRecords
 import com.ideal.linked.toposoid.protocol.model.parser.{KnowledgeForParser, KnowledgeSentenceSetForParser}
 import com.ideal.linked.toposoid.test.utils.TestUtils
 import play.api.libs.json.Json
+import com.ideal.linked.toposoid.protocol.model.base.VerifyingEdges
+import com.ideal.linked.toposoid.protocol.model.base.AnalyzedSentenceObjects
 
 object TestUtilsEx {
   val neo4JUtils = new Neo4JUtilsImpl()
@@ -43,5 +45,36 @@ object TestUtilsEx {
       List(knowledgeForParser),
       List.empty[PropositionRelation])
     TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
+  }
+
+  def checkMatchedBothSide(json:String, sentenceId:String, verifyingEdgesList:List[VerifyingEdges], correctSize:Int ):Unit = {
+
+      val evalA:VerifyingEdges = verifyingEdgesList.filter(x => x.sentenceId.equals(sentenceId)).head
+      val coveredEdges = evalA.coveredPropositionEdges.filter(x => x.destinationNode.isConfirmed && x.sourceNode.isConfirmed)
+      assert(coveredEdges.size == correctSize)
+
+      val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json).as[AnalyzedSentenceObjects]
+      //両側被覆エッジに含まれるノードのチェック
+      val targetAso = analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceId.equals(sentenceId)).head      
+      coveredEdges.foreach(x => {
+        assert(targetAso.nodeMap.get(x.sourceNode.terminalId).get.predicateArgumentStructure.surface.equals(x.sourceNode.terminalSurface))
+        assert(targetAso.nodeMap.get(x.destinationNode.terminalId).get.predicateArgumentStructure.surface.equals(x.destinationNode.terminalSurface))        
+      })
+
+      val sentenceIds = coveredEdges.foldLeft(List.empty[String]){
+        (acc, x) => {        
+          val sourceKnowledgeSentenceIds = x.sourceNode.matchedKnowledgeNodes.foldLeft(Set.empty[String]){(acc2, y) => {
+            acc2 + y.sentenceId
+          }}        
+          val destinationKnowledgeSentenceIds = x.destinationNode.matchedKnowledgeNodes.foldLeft(Set.empty[String]){(acc2, y) => {
+            acc2 + y.sentenceId
+          }}
+          val targetSentenceIds = sourceKnowledgeSentenceIds & destinationKnowledgeSentenceIds 
+          assert(targetSentenceIds.size > 0)
+          acc ::: targetSentenceIds.toList
+        }
+      }      
+      val hoge = sentenceIds.groupBy(identity).filter(x => x._2.size >= targetAso.edgeList.size).toList
+      assert(sentenceIds.groupBy(identity).filter(x => x._2.size >= targetAso.edgeList.size).size > 0)
   }
 }
