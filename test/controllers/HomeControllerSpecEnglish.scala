@@ -57,47 +57,7 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
 
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
-
-
-/* 
-テストパターン
-asos 主張　一つ
-  完全一致
-  部分一致で全て被覆
-  部分一致で全て被覆できない。
-
-asos 前提＋主張　一つ
-  完全一致
-  部分一致で全て被覆
-  部分一致で全て被覆できない。
-
-asos 主張　２つ
-  完全一致
-  部分一致で全て被覆
-  部分一致で全て被覆できない。
-
-asos 前提＋主張　２つ
-  完全一致
-  部分一致で全て被覆
-  部分一致で全て被覆できない。
-  val sentenceA = "Mark has overcome many problems."
-  val sentenceB = "He has a good chance."
-  val sentenceC = "His life is so comfortable now."
-  val sentenceD = "It's always darkest before the dawn."
-
-  val paraphraseA = "Mark has overcome many troubles."
-  val paraphraseB = "He has a good opportunity."
-  val paraphraseC = "His lifespan is so comfortable now."
-  val paraphraseD = "It's always darkest before the morning."
-
-
-*/
-
-
-
-  //val sentenceB = "思い立ったが吉日。"
-  //val sentenceC = "時は金なり。"//
-
+  /*
   "The specification1" should {
     val sentence1 = "Mark has overcome many problems."
     val paraphrase1 = "Mark has overcome many problems." 
@@ -438,29 +398,28 @@ asos 前提＋主張　２つ
       TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=8)
     }
   }  
-  /*
- 
 
-
-
-
-
-  "The specification11" should {
-    val sentence1 = "時の流れに身を任せ、案ずるより産むが易し。"
-    val paraphrase1 = "時の流れに身を委ね、案ずるより生むが易し。" 
+  */
+  "The specification12" should {
+    //val sentence1 = "Union is strength." 
+    //val sentence1 = "Time is money."    
+    //val sentence1 = "Seeing is believing." 
+    //val sentence1 = "No pain, no gain."
+    val sentence1 = "Family is everything."
+    val paraphrase1 = "Seeing is believing." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       val propositionIdForInference1 = java.util.UUID.randomUUID().toString
       val sentenceIdForInference1 = java.util.UUID.randomUUID().toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference1, sentenceIdForInference1, paraphraseKnowledge1))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -472,12 +431,8 @@ asos 前提＋主張　２つ
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 1)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=8)
     }
-  }
-  */
-
-  //
-
+  }  
 
 }

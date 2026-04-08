@@ -204,7 +204,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
             //もしTargetとSourceを別ノードで置き換えられれば、OK
             val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
             logger.debug(queryBothReplacement)
-            val queryBothReplacementResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
+            val queryBothReplacementResultJson: String = getCypherQueryResult(queryBothReplacement, "", transversalState)
             if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
               val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
               logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
