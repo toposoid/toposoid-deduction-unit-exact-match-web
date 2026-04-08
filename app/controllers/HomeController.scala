@@ -248,6 +248,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val retryNum =  conf.getInt("retryCallMicroserviceNum") -1
     for (i <- 0 to retryNum) {
       //val result:String  = this.getCypherQueryResultImpl(query, target, transversalState)
+      //val json = """{ "query":"%s", "target":"%s" }""".format(ToposoidUtils.encodeJsonInJson(query), target)
       val json = """{ "query":"%s", "target":"%s" }""".format(query, target)
       val result:String  = ToposoidUtils.callComponent(
         json,

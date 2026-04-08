@@ -38,7 +38,7 @@ import play.api.test.{FakeRequest, _}
 import scala.concurrent.duration.DurationInt
 import com.ideal.linked.toposoid.protocol.model.base.VerifyingEdges
 
-class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with DefaultAwaitTimeout with Injecting {
+class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with DefaultAwaitTimeout with Injecting {
 
   val transversalState:TransversalState = TransversalState(userId="test-user", username="guest", roleId=0, csrfToken = "")
   val transversalStateJson:String = Json.toJson(transversalState).toString()
@@ -58,25 +58,24 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
 
-
   //複数の主張(完全一致)
   "The specification1" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより産むが易し。" 
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many problems." 
 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時は金なり。" 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good chance." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       val propositionIdForInference1 = java.util.UUID.randomUUID().toString
@@ -87,7 +86,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference1, sentenceIdForInference1, paraphraseKnowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference2, sentenceIdForInference2, paraphraseKnowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -99,28 +98,29 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
+
   //複数の主張(部分一致)
   "The specification2" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより生むが易し。" 
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many troubles." 
 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時間は金なり。" 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good opportunity." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       val propositionIdForInference1 = java.util.UUID.randomUUID().toString
@@ -131,7 +131,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val premiseKnowledge = List(KnowledgeForParser(propositionIdForInference1, sentenceIdForInference1, paraphraseKnowledge1))
       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference2, sentenceIdForInference2, paraphraseKnowledge2))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -143,28 +143,28 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
   //一対の前提と主張(完全一致)
   "The specification3" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより産むが易し。" 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時は金なり。" 
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many problems." 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good chance." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       val propositionIdForInference1 = java.util.UUID.randomUUID().toString
@@ -178,7 +178,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
         KnowledgeForParser(propositionIdForInference2, sentenceIdForInference2, paraphraseKnowledge2)        
       )
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -190,29 +190,29 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
   //一対の前提と主張(部分一致)
   "The specification4" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより生むが易し。" 
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many troubles." 
 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時間は金なり。" 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good opportunity." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
       val propositionIdForInference1 = java.util.UUID.randomUUID().toString
@@ -226,7 +226,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
         KnowledgeForParser(propositionIdForInference2, sentenceIdForInference2, paraphraseKnowledge2)        
       )
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -238,41 +238,55 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
+  /*
+  val sentenceA = "Mark has overcome many problems."
+  val sentenceB = "He has a good chance."
+  val sentenceC = "His life is so comfortable now."
+  val sentenceD = "It's always darkest before the dawn."
+
+  val paraphraseA = "Mark has overcome many troubles."
+  val paraphraseB = "He has a good opportunity."
+  val paraphraseC = "His lifespan is so comfortable now."
+  val paraphraseD = "It's always darkest before the morning."
+
+  */
+
+
   //２対の前提と主張(完全一致)
     "The specification5" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより産むが易し。" 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時は金なり。" 
-    val sentence3 = "思い立ったが吉日。"
-    val paraphrase3 = "思い立ったが吉日。" 
-    val sentence4 = "人事を尽くして天命を待つ。"
-    val paraphrase4 = "人事を尽くして天命を待つ。"
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many problems." 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good chance." 
+    val sentence3 = "His life is so comfortable now."
+    val paraphrase3 = "His life is so comfortable now." 
+    val sentence4 = "It's always darkest before the dawn."
+    val paraphrase4 = "It's always darkest before the dawn."
 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
       val propositionId3 = java.util.UUID.randomUUID().toString
       val sentenceId3 = java.util.UUID.randomUUID().toString
-      val knowledge3 = Knowledge(sentence3,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentence3,"en_US", "{}", false)
       val propositionId4 = java.util.UUID.randomUUID().toString
       val sentenceId4 = java.util.UUID.randomUUID().toString
-      val knowledge4 = Knowledge(sentence4,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentence4,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
-      val paraphraseKnowledge3 = Knowledge(paraphrase3,"ja_JP", "{}", false)
-      val paraphraseKnowledge4 = Knowledge(paraphrase4,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
+      val paraphraseKnowledge3 = Knowledge(paraphrase3,"en_US", "{}", false)
+      val paraphraseKnowledge4 = Knowledge(paraphrase4,"en_US", "{}", false)
 
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
@@ -297,7 +311,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
         KnowledgeForParser(propositionIdForInference4, sentenceIdForInference4, paraphraseKnowledge4)        
       )
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))
@@ -333,21 +347,21 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
-      val knowledge1 = Knowledge(sentence1,"ja_JP", "{}", false)
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
       val propositionId2 = java.util.UUID.randomUUID().toString
       val sentenceId2 = java.util.UUID.randomUUID().toString
-      val knowledge2 = Knowledge(sentence2,"ja_JP", "{}", false)
+      val knowledge2 = Knowledge(sentence2,"en_US", "{}", false)
       val propositionId3 = java.util.UUID.randomUUID().toString
       val sentenceId3 = java.util.UUID.randomUUID().toString
-      val knowledge3 = Knowledge(sentence3,"ja_JP", "{}", false)
+      val knowledge3 = Knowledge(sentence3,"en_US", "{}", false)
       val propositionId4 = java.util.UUID.randomUUID().toString
       val sentenceId4 = java.util.UUID.randomUUID().toString
-      val knowledge4 = Knowledge(sentence4,"ja_JP", "{}", false)
+      val knowledge4 = Knowledge(sentence4,"en_US", "{}", false)
 
-      val paraphraseKnowledge1 = Knowledge(paraphrase1,"ja_JP", "{}", false)
-      val paraphraseKnowledge2 = Knowledge(paraphrase2,"ja_JP", "{}", false)
-      val paraphraseKnowledge3 = Knowledge(paraphrase3,"ja_JP", "{}", false)
-      val paraphraseKnowledge4 = Knowledge(paraphrase4,"ja_JP", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      val paraphraseKnowledge2 = Knowledge(paraphrase2,"en_US", "{}", false)
+      val paraphraseKnowledge3 = Knowledge(paraphrase3,"en_US", "{}", false)
+      val paraphraseKnowledge4 = Knowledge(paraphrase4,"en_US", "{}", false)
 
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId2, sentenceId2, knowledge2), transversalState)
@@ -372,7 +386,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
         KnowledgeForParser(propositionIdForInference4, sentenceIdForInference4, paraphraseKnowledge4)        
       )
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_JP_WEB_PORT"), "analyze", transversalState)
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
         .withJsonBody(Json.parse(json))

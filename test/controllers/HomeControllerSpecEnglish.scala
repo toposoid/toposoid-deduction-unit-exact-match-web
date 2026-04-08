@@ -401,12 +401,8 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
 
   */
   "The specification12" should {
-    //val sentence1 = "Union is strength." 
-    //val sentence1 = "Time is money."    
-    //val sentence1 = "Seeing is believing." 
-    //val sentence1 = "No pain, no gain."
-    val sentence1 = "Family is everything."
-    val paraphrase1 = "Seeing is believing." 
+    val sentence1 = "Union will be strength." 
+    val paraphrase1 = "Knowledge is power." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
@@ -431,7 +427,7 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 1)
 
-      TestUtilsEx.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=8)
+      TestUtilsEx.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=1)
     }
   }  
 
