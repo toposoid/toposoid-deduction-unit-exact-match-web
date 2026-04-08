@@ -243,20 +243,6 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
     }
   }
 
-  /*
-  val sentenceA = "Mark has overcome many problems."
-  val sentenceB = "He has a good chance."
-  val sentenceC = "His life is so comfortable now."
-  val sentenceD = "It's always darkest before the dawn."
-
-  val paraphraseA = "Mark has overcome many troubles."
-  val paraphraseB = "He has a good opportunity."
-  val paraphraseC = "His lifespan is so comfortable now."
-  val paraphraseD = "It's always darkest before the morning."
-
-  */
-
-
   //２対の前提と主張(完全一致)
     "The specification5" should {
     val sentence1 = "Mark has overcome many problems."
@@ -268,7 +254,6 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
     val sentence4 = "It's always darkest before the dawn."
     val paraphrase4 = "It's always darkest before the dawn."
 
-
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
       val sentenceId1 = java.util.UUID.randomUUID().toString
@@ -323,25 +308,24 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 4)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=1)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=3)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
+      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
 
     }
   }
 
-
   //２対の前提と主張(部分一致)
   "The specification6" should {
-    val sentence1 = "案ずるより産むが易し。"
-    val paraphrase1 = "案ずるより生むが易し。" 
-    val sentence2 = "時は金なり。"
-    val paraphrase2 = "時間は金なり。" 
-    val sentence3 = "思い立ったが吉日。"
-    val paraphrase3 = "思い立ったら吉日。" 
-    val sentence4 = "人事を尽くして天命を待つ。"
-    val paraphrase4 = "人事を尽くして涅槃を待つ。"
+    val sentence1 = "Mark has overcome many problems."
+    val paraphrase1 = "Mark has overcome many troubles." 
+    val sentence2 = "He has a good chance."
+    val paraphrase2 = "He has a good opportunity." 
+    val sentence3 = "His life is so comfortable now."
+    val paraphrase3 = "His lifespan is so comfortable now." 
+    val sentence4 = "It's always darkest before the dawn."
+    val paraphrase4 = "It's always darkest before the morning."
 
 
     "returns an appropriate response" in {
@@ -398,10 +382,10 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 4)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=1)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=1)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=3)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
+      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
 
     }
   }

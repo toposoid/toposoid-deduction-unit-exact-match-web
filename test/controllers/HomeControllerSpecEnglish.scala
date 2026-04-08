@@ -57,7 +57,7 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
 
   override implicit def defaultAwaitTimeout: Timeout = 600.seconds
   val controller: HomeController = inject[HomeController]
-  /*
+  
   "The specification1" should {
     val sentence1 = "Mark has overcome many problems."
     val paraphrase1 = "Mark has overcome many problems." 
@@ -399,7 +399,6 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
     }
   }  
 
-  */
   "The specification12" should {
     val sentence1 = "Union will be strength." 
     val paraphrase1 = "Knowledge is power." 

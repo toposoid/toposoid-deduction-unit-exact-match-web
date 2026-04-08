@@ -167,7 +167,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
 
       val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
       //エッジの両側ノードで厳格に一致するものがあるかどうか
-      val query = "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.surface='%s' AND e.caseName='%s' AND n2.surface='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)      
+      val query = "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND n2.surface=\"%s\" RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)      
       logger.debug(query)
       val jsonStr: String = getCypherQueryResult(query, "", transversalState)
       //If there is even one that does not match, it is useless to search further
@@ -181,7 +181,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
       
         //val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.normalizedName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName)
-        val querySourceOnly = "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface='%s' AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
+        val querySourceOnly = "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
 
         logger.debug(querySourceOnly)        
         val querySourceOnlyResultJson: String = getCypherQueryResult(querySourceOnly, "", transversalState)
@@ -192,7 +192,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))           
         } else {            
           //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
-          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
+          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
           logger.debug(queryTargetOnly)
           val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
           if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
@@ -248,8 +248,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val retryNum =  conf.getInt("retryCallMicroserviceNum") -1
     for (i <- 0 to retryNum) {
       //val result:String  = this.getCypherQueryResultImpl(query, target, transversalState)
-      //val json = """{ "query":"%s", "target":"%s" }""".format(ToposoidUtils.encodeJsonInJson(query), target)
-      val json = """{ "query":"%s", "target":"%s" }""".format(query, target)
+      val json = """{ "query":"%s", "target":"%s" }""".format(ToposoidUtils.encodeJsonInJson(query), target)
+      //val json = """{ "query":"%s", "target":"%s" }""".format(query, target)
       val result:String  = ToposoidUtils.callComponent(
         json,
         conf.getString("TOPOSOID_GRAPHDB_WEB_HOST"),
