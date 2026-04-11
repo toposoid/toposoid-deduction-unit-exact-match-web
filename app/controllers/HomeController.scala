@@ -33,6 +33,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 import com.ideal.linked.common.DeploymentConverter.conf
+import com.ideal.linked.toposoid.common.Neo4JUtilsImpl
+import com.ideal.linked.toposoid.common.DeductionUtils
 
 /**
  * This controller creates an `Action` to determine if the entered text matches exactly with the knowledge graph
@@ -55,7 +57,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           acc :+ VerifyingEdges(
             propositionId = aso.knowledgeBaseSemiGlobalNode.propositionId,
             sentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId,
-            coveredPropositionEdges = analyzeGraphKnowledge(getUnsettledEdges(aso), aso, transversalState)
+            coveredPropositionEdges = analyzeGraphKnowledge(DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
           )
         }
       }
@@ -68,7 +70,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
   }
-  
+  /*
   private def getUnsettledEdges(aso:AnalyzedSentenceObject): List[KnowledgeBaseEdge] = {
     val pairSetList = aso.deductionResult.coveredPropositionEdges.foldLeft(List.empty[Set[String]]){
         (acc, x) => {
@@ -146,7 +148,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     //val knowledgeBaseSideInfo = KnowledgeBaseSideInfo(propositionId = , sentenceId = , featureInfoList = List.empty[MatchedFeatureInfo])
     CoveredPropositionEdge(sourceNode = sourceNode, destinationNode = destinationNode)
   }
-
+  */
 
   /**
    * This function is a sub-function of analyze
@@ -164,18 +166,19 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       val destinationAlias = "n2"
       val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
       val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
+      val neo4JUtils = Neo4JUtilsImpl()
 
       val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
       //エッジの両側ノードで厳格に一致するものがあるかどうか
       val query = "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND n2.surface=\"%s\" RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)      
       logger.debug(query)
-      val jsonStr: String = getCypherQueryResult(query, "", transversalState)
+      val jsonStr: String = neo4JUtils.getCypherQueryResult(query, "", transversalState)
       //If there is even one that does not match, it is useless to search further
       if (!jsonStr.equals("""{"records":[]}""")) {
         //ヒットするものがある場合
         val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
         logger.debug(ToposoidUtils.formatMessageForLogger("check1", transversalState.userId)) 
-        Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH))        
+        Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH))        
       }else{
         //ヒットするものがない場合
         //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
@@ -184,31 +187,31 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         val querySourceOnly = "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
 
         logger.debug(querySourceOnly)        
-        val querySourceOnlyResultJson: String = getCypherQueryResult(querySourceOnly, "", transversalState)
+        val querySourceOnlyResultJson: String = neo4JUtils.getCypherQueryResult(querySourceOnly, "", transversalState)
         if (!querySourceOnlyResultJson.equals("""{"records":[]}""")) {
           //Destinationを別ノードで置き換えられる可能性あり
           val neo4jRecords: Neo4jRecords = Json.parse(querySourceOnlyResultJson).as[Neo4jRecords]
           logger.debug(ToposoidUtils.formatMessageForLogger("check2", transversalState.userId))         
-          Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))           
+          Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))           
         } else {            
           //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
           val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
           logger.debug(queryTargetOnly)
-          val queryTargetOnlyResultJson: String = getCypherQueryResult(queryTargetOnly, "", transversalState)
+          val queryTargetOnlyResultJson: String = neo4JUtils.getCypherQueryResult(queryTargetOnly, "", transversalState)
           if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
             //Sourceを別ノードで置き換えられる可能性あり
             val neo4jRecords: Neo4jRecords = Json.parse(queryTargetOnlyResultJson).as[Neo4jRecords]
             logger.debug(ToposoidUtils.formatMessageForLogger("check3", transversalState.userId))                       
-            Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY))             
+            Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY))             
           } else {
             //もしTargetとSourceを別ノードで置き換えられれば、OK
             val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
             logger.debug(queryBothReplacement)
-            val queryBothReplacementResultJson: String = getCypherQueryResult(queryBothReplacement, "", transversalState)
+            val queryBothReplacementResultJson: String = neo4JUtils.getCypherQueryResult(queryBothReplacement, "", transversalState)
             if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
               val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
               logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
-              Option(getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH))                    
+              Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH))                    
             }else{
               //推論不能
               //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
@@ -243,7 +246,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     result.flatten
     
   }
-
+  /*
   private def getCypherQueryResult(query:String, target:String, transversalState:TransversalState): String = Try{
     val retryNum =  conf.getInt("retryCallMicroserviceNum") -1
     for (i <- 0 to retryNum) {
@@ -267,7 +270,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     case Success(s) => s
     case Failure(e) => throw e
   }
-
+  */
 
 }
 
