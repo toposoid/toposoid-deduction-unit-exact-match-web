@@ -167,6 +167,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
       val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
       val neo4JUtils = Neo4JUtilsImpl()
+      val deductionUnitName = conf.getString("TOPOSOID_DEDUCTION_UNIT_NAME")
 
       val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
       //エッジの両側ノードで厳格に一致するものがあるかどうか
@@ -178,7 +179,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         //ヒットするものがある場合
         val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
         logger.debug(ToposoidUtils.formatMessageForLogger("check1", transversalState.userId)) 
-        Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH))        
+        Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH, deductionUnitName))        
       }else{
         //ヒットするものがない場合
         //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
@@ -192,7 +193,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           //Destinationを別ノードで置き換えられる可能性あり
           val neo4jRecords: Neo4jRecords = Json.parse(querySourceOnlyResultJson).as[Neo4jRecords]
           logger.debug(ToposoidUtils.formatMessageForLogger("check2", transversalState.userId))         
-          Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY))           
+          Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, deductionUnitName))           
         } else {            
           //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
           val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
@@ -202,7 +203,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
             //Sourceを別ノードで置き換えられる可能性あり
             val neo4jRecords: Neo4jRecords = Json.parse(queryTargetOnlyResultJson).as[Neo4jRecords]
             logger.debug(ToposoidUtils.formatMessageForLogger("check3", transversalState.userId))                       
-            Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY))             
+            Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY, deductionUnitName))             
           } else {
             //もしTargetとSourceを別ノードで置き換えられれば、OK
             val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
@@ -211,7 +212,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
             if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
               val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
               logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
-              Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH))                    
+              Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH, deductionUnitName))                    
             }else{
               //推論不能
               //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。

@@ -46,7 +46,7 @@ object TestUtilsEx {
       List.empty[PropositionRelation])
     TestUtils.registerData(knowledgeSentenceSetForParser, transversalState, addVectorFlag = false)
   }
-
+  
   def checkMatchedBothSide(json:String, sentenceId:String, verifyingEdgesList:List[VerifyingEdges], correctSize:Int ):Unit = {
 
       val evalA:VerifyingEdges = verifyingEdgesList.filter(x => x.sentenceId.equals(sentenceId)).head
@@ -126,14 +126,23 @@ object TestUtilsEx {
       }      
       assert(sentenceIds.groupBy(identity).filter(x => x._2.size >= correctSize).size > 0)
   }
-
+  
 
   def checkMatchedFuzzy(json:String, sentenceId:String, verifyingEdgesList:List[VerifyingEdges], correctSize:Int ):Unit = {
 
     val evalA:VerifyingEdges = verifyingEdgesList.filter(x => x.sentenceId.equals(sentenceId)).head
-    val coveredEdges = evalA.coveredPropositionEdges.filter(x => !x.destinationNode.isConfirmed && !x.sourceNode.isConfirmed)
-    assert(coveredEdges.size == correctSize)
 
+    val coveredEdges = correctSize match {
+      case 0 => {
+        evalA.coveredPropositionEdges.filter(x => !x.destinationNode.isConfirmed && !x.sourceNode.isConfirmed && x.sourceNode.matchedKnowledgeNodes.size + x.destinationNode.matchedKnowledgeNodes.size == 0)
+      }
+      case _ => {
+        evalA.coveredPropositionEdges.filter(x => !x.destinationNode.isConfirmed && !x.sourceNode.isConfirmed && x.sourceNode.matchedKnowledgeNodes.size + x.destinationNode.matchedKnowledgeNodes.size > 0)        
+      }
+    } 
+    assert(coveredEdges.size == correctSize)
+    if(coveredEdges.size == 0) return
+    
     val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json).as[AnalyzedSentenceObjects]
     //両側被覆エッジに含まれるノードのチェック
     val targetAso = analyzedSentenceObjects.analyzedSentenceObjects.filter(x => x.knowledgeBaseSemiGlobalNode.sentenceId.equals(sentenceId)).head      
