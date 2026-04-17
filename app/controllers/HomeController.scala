@@ -205,20 +205,36 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
             logger.debug(ToposoidUtils.formatMessageForLogger("check3", transversalState.userId))                       
             Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY, deductionUnitName))             
           } else {
-            //もしTargetとSourceを別ノードで置き換えられれば、OK
-            val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
-            logger.debug(queryBothReplacement)
-            val queryBothReplacementResultJson: String = neo4JUtils.getCypherQueryResult(queryBothReplacement, "", transversalState)
-            if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
-              val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
-              logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
-              Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH, deductionUnitName))                    
+            //もしTargetとSourceを別ノードで置き換えられれば、OK   
+            //ただし置換される可能性のあるのは動詞もしくは名詞なので、対象語がその範疇にあるかを確認
+            val isVerbOrNounOnSource = sourceNode.localContext.lang match {
+              case "ja_JP" =>  sourceNode.predicateArgumentStructure.morphemes.contains("動詞") || sourceNode.predicateArgumentStructure.morphemes.contains("名詞")
+              case "en_US" => sourceNode.predicateArgumentStructure.morphemes.contains("VERB") || sourceNode.predicateArgumentStructure.morphemes.contains("NOUN")
+            }
+            val isVerbOrNounOnDestination = destinationNode.localContext.lang match {
+              case "ja_JP" =>  destinationNode.predicateArgumentStructure.morphemes.contains("動詞") || destinationNode.predicateArgumentStructure.morphemes.contains("名詞")
+              case "en_US" => destinationNode.predicateArgumentStructure.morphemes.contains("VERB") || destinationNode.predicateArgumentStructure.morphemes.contains("NOUN")
+            }
+            if(isVerbOrNounOnSource && isVerbOrNounOnDestination){
+              val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
+              logger.debug(queryBothReplacement)
+              val queryBothReplacementResultJson: String = neo4JUtils.getCypherQueryResult(queryBothReplacement, "", transversalState)
+              if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
+                val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
+                logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
+                Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH, deductionUnitName))                    
+              }else{
+                //推論不能
+                //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
+                logger.debug(ToposoidUtils.formatMessageForLogger("check5", transversalState.userId)) 
+                None
+              }            
             }else{
-              //推論不能
-              //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
-              logger.debug(ToposoidUtils.formatMessageForLogger("check5", transversalState.userId)) 
-              None
-            }            
+                //推論不能
+                //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
+                logger.debug(ToposoidUtils.formatMessageForLogger("check5", transversalState.userId)) 
+                None
+            }    
           }            
         }                           
       }
