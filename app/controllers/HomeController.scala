@@ -207,13 +207,15 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           } else {
             //もしTargetとSourceを別ノードで置き換えられれば、OK   
             //ただし置換される可能性のあるのは動詞もしくは名詞なので、対象語がその範疇にあるかを確認
+            val sourceMorphemes = sourceNode.predicateArgumentStructure.morphemes
+            val destinationMorphemes = destinationNode.predicateArgumentStructure.morphemes
             val isVerbOrNounOnSource = sourceNode.localContext.lang match {
-              case "ja_JP" =>  sourceNode.predicateArgumentStructure.morphemes.contains("動詞") || sourceNode.predicateArgumentStructure.morphemes.contains("名詞")
-              case "en_US" => sourceNode.predicateArgumentStructure.morphemes.contains("VERB") || sourceNode.predicateArgumentStructure.morphemes.contains("NOUN")
+              case "ja_JP" =>  sourceMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || sourceMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
+              case "en_US" => sourceMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || sourceMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
             }
             val isVerbOrNounOnDestination = destinationNode.localContext.lang match {
-              case "ja_JP" =>  destinationNode.predicateArgumentStructure.morphemes.contains("動詞") || destinationNode.predicateArgumentStructure.morphemes.contains("名詞")
-              case "en_US" => destinationNode.predicateArgumentStructure.morphemes.contains("VERB") || destinationNode.predicateArgumentStructure.morphemes.contains("NOUN")
+              case "ja_JP" =>  destinationMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || destinationMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
+              case "en_US" => destinationMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || destinationMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
             }
             if(isVerbOrNounOnSource && isVerbOrNounOnDestination){
               val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)

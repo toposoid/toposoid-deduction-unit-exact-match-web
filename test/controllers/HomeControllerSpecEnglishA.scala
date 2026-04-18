@@ -98,8 +98,8 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
@@ -143,8 +143,8 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
@@ -190,8 +190,8 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
@@ -238,8 +238,8 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 2)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
     }
   }
 
@@ -308,10 +308,10 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 4)
 
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
-      TestUtilsEx.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
 
     }
   }
@@ -382,10 +382,10 @@ class HomeControllerSpecEnglishA extends PlaySpec with BeforeAndAfter with Befor
       val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
       assert(verifyingEdgesList.size == 4)
 
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
-      TestUtilsEx.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList, correctSize=5)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList, correctSize=6)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference4, verifyingEdgesList=verifyingEdgesList, correctSize=7)
 
     }
   }
