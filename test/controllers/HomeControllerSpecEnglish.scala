@@ -433,8 +433,8 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
   }  
 
   "The specification12" should {
-    val sentence1 = "Union will be strength." 
-    val paraphrase1 = "Knowledge is power." 
+    val sentence1 = "Practice makes perfect." 
+    val paraphrase1 = "Consistency builds power." 
 
     "returns an appropriate response" in {
       val propositionId1 = java.util.UUID.randomUUID().toString
@@ -460,8 +460,8 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
       assert(verifyingEdgesList.map(x => x.coveredPropositionEdges.size).sum == 2)
 
       TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=0)
-      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=2)  
-      TestUtils.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=0)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=1)  
+      TestUtils.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=1)
     }
   }  
 
