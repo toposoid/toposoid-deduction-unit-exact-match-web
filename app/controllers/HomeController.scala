@@ -86,12 +86,43 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val query3 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
     val query4 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
 
-    List(
-      DeductionQuery(query1, RelationMatchState.MATCHED_BOTH, "n1", "n2"),
-      DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2"),
-      DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2"),
-      DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
-    )      
+    val haveFeatureOnSource = sourceNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0
+    val haveFeatureOnDestination = destinationNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0
+
+    //命題のFeatureNodeのペアをどう持つかで、仮に表層テキスト単位でマッチしても判断を先送りする必要がある。
+    (haveFeatureOnSource, haveFeatureOnDestination) match
+      case (false, false) => {
+        List(
+          DeductionQuery(query1, RelationMatchState.MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
+        )      
+      }
+      case (true, true) => {
+        List(
+          DeductionQuery(query1, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query2, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query3, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
+        )      
+      }
+      case (true, false) => {
+        List(
+          DeductionQuery(query1, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query2, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
+        )      
+      }
+      case (false, true) => {
+        List(
+          DeductionQuery(query1, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2"),
+          DeductionQuery(query3, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2"),
+          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
+        )      
+      }
   }
 
   private def analyzeGraphKnowledge(getQeuries:(KnowledgeBaseEdge, Map[String, KnowledgeBaseNode]) => List[DeductionQuery], edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
