@@ -35,6 +35,10 @@ import scala.util.{Failure, Success, Try}
 import com.ideal.linked.common.DeploymentConverter.conf
 import com.ideal.linked.toposoid.common.Neo4JUtilsImpl
 import com.ideal.linked.toposoid.common.DeductionUtils
+import play.api.libs.json.{Json, OWrites, Reads}
+import org.checkerframework.checker.initialization.qual.NotOnlyInitialized
+
+case class DeductionQuery(query:String,relationMatchState:RelationMatchState, sourceAlias:String, destinationAlias:String)
 
 /**
  * This controller creates an `Action` to determine if the entered text matches exactly with the knowledge graph
@@ -51,13 +55,13 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     try {
       val json = request.body
       val analyzedSentenceObjects: AnalyzedSentenceObjects = Json.parse(json.toString).as[AnalyzedSentenceObjects]
-      val asos:List[AnalyzedSentenceObject] = analyzedSentenceObjects.analyzedSentenceObjects
+      val asos:List[AnalyzedSentenceObject] = analyzedSentenceObjects.analyzedSentenceObjects      
       val result:List[VerifyingEdges] = asos.foldLeft(List.empty[VerifyingEdges]){
         (acc, aso) => {          
           acc :+ VerifyingEdges(
             propositionId = aso.knowledgeBaseSemiGlobalNode.propositionId,
             sentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId,
-            coveredPropositionEdges = analyzeGraphKnowledge(DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
+            coveredPropositionEdges = analyzeGraphKnowledge(getQeuries, DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
           )
         }
       }
@@ -70,122 +74,116 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
   }
-
-
-  /**
-   * This function is a sub-function of analyze
-   *
-   * @param nodeMap
-   * @param sentenceType
-   * @param accParent
-   * @return
-   */
   
-    private def analyzeEdge(edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], transversalState:TransversalState):Option[CoveredPropositionEdge] = {
-      val sourceKey = edge.sourceId
-      val targetKey = edge.destinationId
-      val sourceAlias = "n1"
-      val destinationAlias = "n2"
-      val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
-      val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
-      val neo4JUtils = Neo4JUtilsImpl()
-      val deductionUnitName = conf.getString("TOPOSOID_DEDUCTION_UNIT_NAME")
+  private def getQeuries(edge:KnowledgeBaseEdge, nodeMap:Map[String, KnowledgeBaseNode]):List[DeductionQuery] = {
+    val sourceKey = edge.sourceId
+    val targetKey = edge.destinationId
+    val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
+    val destinationNode = nodeMap.get(targetKey).get.asInstanceOf[KnowledgeBaseNode]
+    val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
+    val query1 = "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND n2.surface=\"%s\" RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface) 
+    val query2 = "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
+    val query3 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
+    val query4 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
 
-      val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
-      //エッジの両側ノードで厳格に一致するものがあるかどうか
-      val query = "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND n2.surface=\"%s\" RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.surface)      
-      logger.debug(query)
-      val jsonStr: String = neo4JUtils.getCypherQueryResult(query, "", transversalState)
-      //If there is even one that does not match, it is useless to search further
-      if (!jsonStr.equals("""{"records":[]}""")) {
-        //ヒットするものがある場合
-        val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]
-        logger.debug(ToposoidUtils.formatMessageForLogger("check1", transversalState.userId)) 
-        Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH, deductionUnitName))        
-      }else{
-        //ヒットするものがない場合
-        //上記でヒットしない場合、エッジの片側ノード（Source）で厳格に一致するものがあるかどうか
-      
-        //val querySourceOnly = "MATCH (n1:%s)-[e]-(n2:%s) WHERE n1.normalizedName='%s' AND n1.isDenialWord='%s' AND e.caseName='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, caseName)
-        val querySourceOnly = "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.surface=\"%s\" AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.surface, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord)
-
-        logger.debug(querySourceOnly)        
-        val querySourceOnlyResultJson: String = neo4JUtils.getCypherQueryResult(querySourceOnly, "", transversalState)
-        if (!querySourceOnlyResultJson.equals("""{"records":[]}""")) {
-          //Destinationを別ノードで置き換えられる可能性あり
-          val neo4jRecords: Neo4jRecords = Json.parse(querySourceOnlyResultJson).as[Neo4jRecords]
-          logger.debug(ToposoidUtils.formatMessageForLogger("check2", transversalState.userId))         
-          Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, deductionUnitName))           
-        } else {            
-          //上記でヒットしない場合、エッジの片側ノード（Target）で厳格に一致するものがあるかどうか
-          val queryTargetOnly = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.surface=\"%s\" AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.surface, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord)
-          logger.debug(queryTargetOnly)
-          val queryTargetOnlyResultJson: String = neo4JUtils.getCypherQueryResult(queryTargetOnly, "", transversalState)
-          if (!queryTargetOnlyResultJson.equals("""{"records":[]}""")) {
-            //Sourceを別ノードで置き換えられる可能性あり
-            val neo4jRecords: Neo4jRecords = Json.parse(queryTargetOnlyResultJson).as[Neo4jRecords]
-            logger.debug(ToposoidUtils.formatMessageForLogger("check3", transversalState.userId))                       
-            Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_TARGET_NODE_ONLY, deductionUnitName))             
-          } else {
-            //もしTargetとSourceを別ノードで置き換えられれば、OK   
-            //ただし置換される可能性のあるのは動詞もしくは名詞なので、対象語がその範疇にあるかを確認
-            val sourceMorphemes = sourceNode.predicateArgumentStructure.morphemes
-            val destinationMorphemes = destinationNode.predicateArgumentStructure.morphemes
-            val isVerbOrNounOnSource = sourceNode.localContext.lang match {
-              case "ja_JP" =>  sourceMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || sourceMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
-              case "en_US" => sourceMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || sourceMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
-            }
-            val isVerbOrNounOnDestination = destinationNode.localContext.lang match {
-              case "ja_JP" =>  destinationMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || destinationMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
-              case "en_US" => destinationMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || destinationMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
-            }
-            if(isVerbOrNounOnSource && isVerbOrNounOnDestination){
-              val queryBothReplacement = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord)
-              logger.debug(queryBothReplacement)
-              val queryBothReplacementResultJson: String = neo4JUtils.getCypherQueryResult(queryBothReplacement, "", transversalState)
-              if (!queryBothReplacementResultJson.equals("""{"records":[]}""")) {
-                val neo4jRecords: Neo4jRecords = Json.parse(queryBothReplacementResultJson).as[Neo4jRecords]
-                logger.debug(ToposoidUtils.formatMessageForLogger("check4", transversalState.userId))                     
-                Option(DeductionUtils.getCoveredPropositionEdge(edge, sourceAlias, destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.NOT_MATCHED_BOTH, deductionUnitName))                    
-              }else{
-                //推論不能
-                //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
-                logger.debug(ToposoidUtils.formatMessageForLogger("check5", transversalState.userId)) 
-                None
-              }            
-            }else{
-                //推論不能
-                //TODO:どうやって呼び出し側で検知するか？　→ 渡したエッジを全て被覆できていなければそれで終了。
-                logger.debug(ToposoidUtils.formatMessageForLogger("check5", transversalState.userId)) 
-                None
-            }    
-          }            
-        }                           
-      }
+    List(
+      DeductionQuery(query1, RelationMatchState.MATCHED_BOTH, "n1", "n2"),
+      DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2"),
+      DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2"),
+      DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2")
+    )      
   }
 
-  /**
-   * This function is a sub-function of analyze
-   *
-   * @param nodeMap
-   * @param sentenceType
-   * @param accParent
-   * @return
-   */
-  
-  private def analyzeGraphKnowledge(edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
-    
+  private def analyzeGraphKnowledge(getQeuries:(KnowledgeBaseEdge, Map[String, KnowledgeBaseNode]) => List[DeductionQuery], edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {
     val nodeMap: Map[String, KnowledgeBaseNode] =  aso.nodeMap    
-
     val futures: List[Future[Option[CoveredPropositionEdge]]] = edges.foldLeft(List.empty[Future[Option[CoveredPropositionEdge]]]){
       (acc, edge) => {
-        acc :+ Future(analyzeEdge(edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], transversalState))
+        val deductionQueries = getQeuries(edge, nodeMap)        
+        acc :+ Future(analyzeEdge(0, deductionQueries, edge, nodeMap, Neo4JUtilsImpl(), transversalState))
       }
     }    
     val combinedFuture: Future[List[Option[CoveredPropositionEdge]]] = Future.sequence(futures)
     val result = Await.result(combinedFuture, Duration.Inf)    
     result.flatten
+  }
+
+  private def analyzeEdge(idx:Int, deductionQueries:List[DeductionQuery],edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState):Option[CoveredPropositionEdge] = {
     
+    val sourceNode = nodeMap.get(edge.sourceId).get.asInstanceOf[KnowledgeBaseNode]
+    val destinationNode = nodeMap.get(edge.destinationId).get.asInstanceOf[KnowledgeBaseNode]
+    val sourceMorphemes = sourceNode.predicateArgumentStructure.morphemes
+    val destinationMorphemes = destinationNode.predicateArgumentStructure.morphemes
+    val isVerbOrNounOnSource = sourceNode.localContext.lang match {
+      case "ja_JP" =>  sourceMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || sourceMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
+      case "en_US" => sourceMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || sourceMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
+    }
+    val isVerbOrNounOnDestination = destinationNode.localContext.lang match {
+      case "ja_JP" =>  destinationMorphemes.filter(x => x.split(",").toList.contains("動詞")).size > 0 || destinationMorphemes.filter(x => x.split(",").toList.contains("名詞")).size > 0
+      case "en_US" => destinationMorphemes.filter(x => x.split(",").toList.contains("VERB")).size > 0  || destinationMorphemes.filter(x => x.split(",").toList.contains("NOUN")).size > 0
+    }
+
+    deductionQueries(idx).relationMatchState match {
+      case RelationMatchState.MATCHED_BOTH => {
+        analyze(idx, deductionQueries, edge, nodeMap, neo4JUtils, transversalState) match {
+          case Some(x) => Option(x)
+          case _ => {
+            if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+            else None  
+          }}
+      }
+      case RelationMatchState.MATCHED_SOURCE_NODE_ONLY => {
+        if(isVerbOrNounOnDestination){
+          analyze(idx, deductionQueries, edge, nodeMap, neo4JUtils, transversalState) match {
+            case Some(x) => Option(x)
+            case _ => {
+              if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+              else None  
+            }}          
+        }else {
+          if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+          else None        
+        }
+      }
+      case RelationMatchState.MATCHED_TARGET_NODE_ONLY => {
+        if(isVerbOrNounOnSource) {
+          analyze(idx, deductionQueries, edge, nodeMap, neo4JUtils, transversalState) match {
+            case Some(x) => Option(x)
+            case _ => {
+              if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+              else None  
+            }}          
+        }else {
+          if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+          else None        
+        }
+      }
+      case RelationMatchState.NOT_MATCHED_BOTH => {
+        if(isVerbOrNounOnSource && isVerbOrNounOnDestination){
+          analyze(idx, deductionQueries, edge, nodeMap, neo4JUtils, transversalState) match {
+            case Some(x) => Option(x)
+            case _ => {
+              if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+              else None  
+            }}          
+        }else {
+          if(idx + 1 < deductionQueries.size) analyzeEdge(idx+1, deductionQueries, edge, nodeMap, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState)
+          else None        
+        }
+      }
+    }
+  }
+  
+  private def analyze(idx:Int, deductionQueries:List[DeductionQuery],edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState):Option[CoveredPropositionEdge] = {
+    val deductionUnitName = conf.getString("TOPOSOID_DEDUCTION_UNIT_NAME")
+    val jsonStr: String = neo4JUtils.getCypherQueryResult(deductionQueries(idx).query, "", transversalState)
+    //If there is even one that does not match, it is useless to search further
+    if (!jsonStr.equals("""{"records":[]}""")) {
+      //ヒットするものがある場合
+      val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]      
+      Option(DeductionUtils.getCoveredPropositionEdge(edge, deductionQueries(idx).sourceAlias, deductionQueries(idx).destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH, deductionUnitName))        
+    }else{
+      None
+    }
   }
 
 }
