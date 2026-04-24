@@ -180,7 +180,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     if (!jsonStr.equals("""{"records":[]}""")) {
       //ヒットするものがある場合
       val neo4jRecords: Neo4jRecords = Json.parse(jsonStr).as[Neo4jRecords]      
-      Option(DeductionUtils.getCoveredPropositionEdge(edge, deductionQueries(idx).sourceAlias, deductionQueries(idx).destinationAlias, nodeMap,  neo4jRecords, RelationMatchState.MATCHED_BOTH, deductionUnitName))        
+      Option(DeductionUtils.getCoveredPropositionEdge(edge, deductionQueries(idx).sourceAlias, deductionQueries(idx).destinationAlias, nodeMap,  neo4jRecords, deductionQueries(idx).relationMatchState, deductionUnitName))        
     }else{
       None
     }
