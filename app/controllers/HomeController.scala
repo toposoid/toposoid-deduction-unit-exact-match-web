@@ -37,8 +37,9 @@ import com.ideal.linked.toposoid.common.Neo4JUtilsImpl
 import com.ideal.linked.toposoid.common.DeductionUtils
 import play.api.libs.json.{Json, OWrites, Reads}
 import org.checkerframework.checker.initialization.qual.NotOnlyInitialized
+import com.ideal.linked.toposoid.common.DeductionQuery
 
-case class DeductionQuery(query:String,relationMatchState:RelationMatchState, sourceAlias:String, destinationAlias:String,isSourceConfirmed:Boolean, isDestinationConfirmed:Boolean)
+//case class DeductionQuery(query:String,relationMatchState:RelationMatchState, sourceAlias:String, destinationAlias:String,isSourceConfirmed:Boolean, isDestinationConfirmed:Boolean)
 
 /**
  * This controller creates an `Action` to determine if the entered text matches exactly with the knowledge graph
@@ -61,7 +62,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           acc :+ VerifyingEdges(            
             propositionId = aso.knowledgeBaseSemiGlobalNode.propositionId,
             sentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId,
-            coveredPropositionEdges = analyzeGraphKnowledge(getQeuries, DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
+            coveredPropositionEdges = DeductionUtils.analyzeGraphKnowledge(getQeuries, DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
           )
         }
       }
@@ -75,7 +76,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }
   
-  private def getQeuries(edge:KnowledgeBaseEdge, nodeMap:Map[String, KnowledgeBaseNode]):List[DeductionQuery] = {
+  private def getQeuries(edge:KnowledgeBaseEdge, nodeMap:Map[String, KnowledgeBaseNode], transversalState:TransversalState):List[DeductionQuery] = {
     val sourceKey = edge.sourceId
     val targetKey = edge.destinationId
     val sourceNode = nodeMap.get(sourceKey).get.asInstanceOf[KnowledgeBaseNode]
@@ -124,7 +125,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         )      
       }
   }
-
+  /*
   private def analyzeGraphKnowledge(getQeuries:(KnowledgeBaseEdge, Map[String, KnowledgeBaseNode]) => List[DeductionQuery], edges: List[KnowledgeBaseEdge], aso:AnalyzedSentenceObject, transversalState:TransversalState):List[CoveredPropositionEdge] = {    
     val futures: List[Future[Option[CoveredPropositionEdge]]] = edges.foldLeft(List.empty[Future[Option[CoveredPropositionEdge]]]){
       (acc, edge) => {
@@ -219,7 +220,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
   }
-
+  */
   /*
   private def analyzeEdge(idx:Int, deductionQueries:List[DeductionQuery],edge:KnowledgeBaseEdge, aso:AnalyzedSentenceObject, neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState):Option[CoveredPropositionEdge] = {
     val nodeMap = aso.nodeMap
@@ -303,6 +304,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     }
   }
   */
+  /*
   private def analyze(idx:Int, deductionQueries:List[DeductionQuery],edge:KnowledgeBaseEdge, nodeMap: Map[String, KnowledgeBaseNode], neo4JUtils:Neo4JUtilsImpl, transversalState:TransversalState):Option[CoveredPropositionEdge] = {
     val deductionUnitName = conf.getString("TOPOSOID_DEDUCTION_UNIT_NAME")
     val jsonStr: String = neo4JUtils.getCypherQueryResult(deductionQueries(idx).query, "", transversalState)
@@ -315,5 +317,5 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       None
     }
   }
-
+  */
 }
