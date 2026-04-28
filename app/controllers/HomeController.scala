@@ -62,7 +62,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
           acc :+ VerifyingEdges(            
             propositionId = aso.knowledgeBaseSemiGlobalNode.propositionId,
             sentenceId = aso.knowledgeBaseSemiGlobalNode.sentenceId,
-            coveredPropositionEdges = DeductionUtils.analyzeGraphKnowledge(getQeuries, DeductionUtils.getUnsettledEdges(aso), aso, transversalState)
+            coveredPropositionEdges = DeductionUtils.analyzeGraphKnowledge(getQeuries, aso, transversalState)
           )
         }
       }
