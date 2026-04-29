@@ -79,7 +79,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
   private def getQeuries(edge:KnowledgeBaseEdge, aso:AnalyzedSentenceObject, transversalState:TransversalState):List[DeductionQuery] = {
     
     //すでにsentenceIdの候補がある場合、それらのsenteneIdでフィルタリングをかける。
-    val sentenceIds = aso.deductionResult.evidenceKnowledgeList.map(x => x.sentenceId).distinct
+    val sentenceIds = aso.deductionResult.evidenceKnowledgeList.map(x => "'" + x.sentenceId + "'").distinct
     val sentenceIdFilterQuery = sentenceIds.size match {
       case 0 => ""
       case _ => "AND n1.sentenceId IN [%s]".format(sentenceIds.mkString(","))
