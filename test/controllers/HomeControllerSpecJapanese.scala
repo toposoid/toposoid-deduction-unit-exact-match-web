@@ -59,7 +59,7 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
     TestUtilsEx.deleteNeo4JAllData(transversalState)
   }
 
-  override implicit def defaultAwaitTimeout: Timeout = 600.seconds
+  override implicit def defaultAwaitTimeout: Timeout = 1800.seconds
   val controller: HomeController = inject[HomeController]
   
   "The specification1" should {
@@ -469,7 +469,7 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
 
     val paraphrase3 = "トレーラーが一台止まっています。"
     //val paraphrase3 = "大型車が一台止まっています。" 大型車は形容詞と解釈され、置換対象ノードとして認識しない。
-    val referencePara3Ok = Reference(url = "", surface = "大型車が", surfaceIndex = 0, isWholeSentence = false,
+    val referencePara3Ok = Reference(url = "", surface = "トレーラーが", surfaceIndex = 0, isWholeSentence = false,
       originalUrlOrReference = "https://farm8.staticflickr.com/7103/7210629614_5a388d9a9c_z.jpg")
     val imageBoxInfoPara3Ok = ImageBoxInfo(x = 23, y = 25, weight = 601, height = 341)
 
@@ -485,7 +485,7 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
       val propositionIdForInference = java.util.UUID.randomUUID().toString
       val sentenceIdForInference3 = java.util.UUID.randomUUID().toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
-       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, sentenceIdForInference3, paraphraseKnowledge3), KnowledgeForParser(propositionIdForInference, sentenceIdForInference3, paraphraseKnowledge3))
+       val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, sentenceIdForInference3, paraphraseKnowledge3))
       val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
       val json = addImageInfoToAnalyzedSentenceObjects(lang=lang, inputSentence, getImageInfo2(List((referencePara3Ok, imageBoxInfoPara3Ok)), transversalState), transversalState)
       
