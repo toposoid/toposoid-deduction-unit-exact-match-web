@@ -465,4 +465,37 @@ class HomeControllerSpecEnglish extends PlaySpec with BeforeAndAfter with Before
     }
   }  
 
+  "The specification13" should {
+    val sentence1 = "There is a boat." 
+    val paraphrase1 = "There is the boat." 
+
+    "returns an appropriate response" in {
+      val propositionId1 = java.util.UUID.randomUUID().toString
+      val sentenceId1 = java.util.UUID.randomUUID().toString
+      val knowledge1 = Knowledge(sentence1,"en_US", "{}", false)
+      val paraphraseKnowledge1 = Knowledge(paraphrase1,"en_US", "{}", false)
+      TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId1, knowledge1), transversalState)
+      val propositionIdForInference1 = java.util.UUID.randomUUID().toString
+      val sentenceIdForInference1 = java.util.UUID.randomUUID().toString
+      val premiseKnowledge = List.empty[KnowledgeForParser]
+      val claimKnowledge = List(KnowledgeForParser(propositionIdForInference1, sentenceIdForInference1, paraphraseKnowledge1))
+      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
+      val json = ToposoidUtils.callComponent(inputSentence, conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_HOST"), conf.getString("TOPOSOID_SENTENCE_PARSER_EN_WEB_PORT"), "analyze", transversalState)
+      val fr = FakeRequest(POST, "/execute")
+        .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)
+        .withJsonBody(Json.parse(json))
+      val result = call(controller.execute(), fr)
+      status(result) mustBe OK
+      contentType(result) mustBe Some("application/json")
+      val jsonResult: String = contentAsJson(result).toString()
+
+      val verifyingEdgesList: List[VerifyingEdges] = Json.parse(jsonResult).as[List[VerifyingEdges]]
+      assert(verifyingEdgesList.map(x => x.coveredPropositionEdges.size).sum == 3)
+
+      TestUtils.checkMatchedBothSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=3)
+      TestUtils.checkMatchedOneSide(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=0)  
+      TestUtils.checkMatchedFuzzy(json=json, sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList, correctSize=0)
+    }
+  }  
+
 }

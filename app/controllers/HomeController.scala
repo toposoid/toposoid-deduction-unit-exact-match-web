@@ -75,33 +75,12 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       }
     }
   }
-  
-  private def getPassThroughNodeStatePair(sourceNode:KnowledgeBaseNode, destinationNode:KnowledgeBaseNode):(Boolean, Boolean) = {
-    val haveDeterminerSource = sourceNode.localContext.lang match  {
-      case "en_US" => {
-        if(sourceNode.predicateArgumentStructure.caseType.equals("dt")) true
-        else false
-      }
-      case "ja_JP" => false
-      case _ => false
-    }
-    val haveDeterminerDestination = destinationNode.localContext.lang match  {
-      case "en_US" => {
-        if(destinationNode.predicateArgumentStructure.caseType.equals("dt")) true
-        else false
-      }
-      case "ja_JP" => false
-      case _ => false
-    }
-    (haveDeterminerSource, haveDeterminerDestination)
-  }
-
 
   private def getQueryAndRelationMatchState(queryTemplate:String, sourceFilterPhrase:String, destinationFilterPhrase:String, expectedRelationMatchState:RelationMatchState, sourceNode:KnowledgeBaseNode, destinationNode:KnowledgeBaseNode):(String, RelationMatchState) = {
     val haveFeatureOnSource = sourceNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0
     val haveFeatureOnDestination = destinationNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0    
     //命題のFeatureNodeのペアをどう持つかで、仮に表層テキスト単位でマッチしても判断を先送りする必要がある。RelationMatchStateを指定している意味。
-    val (haveDeterminerSource, haveDeterminerDestination) = getPassThroughNodeStatePair(sourceNode, destinationNode)
+    val (haveDeterminerSource, haveDeterminerDestination) = DeductionUtils.getPassThroughNodeStatePair(sourceNode, destinationNode)
     (haveDeterminerSource, haveDeterminerDestination) match {
       case (true, true) => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", "").replace("__##DESTINATION_FILTER_PHRASE##__", ""), RelationMatchState.MATCHED_BOTH) //このケースはないと思うが念の為。 
       case (true, false) => haveFeatureOnDestination match {
