@@ -80,6 +80,23 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val haveFeatureOnSource = sourceNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0
     val haveFeatureOnDestination = destinationNode.localContext.knowledgeFeatureReferences.filter(x => List(FeatureType.IMAGE.index, FeatureType.TABLE.index).contains(x.featureType)).size > 0    
     //命題のFeatureNodeのペアをどう持つかで、仮に表層テキスト単位でマッチしても判断を先送りする必要がある。RelationMatchStateを指定している意味。
+    val query = queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", sourceFilterPhrase).replace("__##DESTINATION_FILTER_PHRASE##__", destinationFilterPhrase)
+
+    (haveFeatureOnSource, haveFeatureOnDestination) match {
+      case (false, false) => {   
+        (query, expectedRelationMatchState)
+      }     
+      case (true, true) => {
+        (query, RelationMatchState.NOT_MATCHED_BOTH)
+      }
+      case (true, false) => {
+        (query, RelationMatchState.MATCHED_TARGET_NODE_ONLY)            
+      }
+      case (false, true) => {
+        (query, RelationMatchState.MATCHED_SOURCE_NODE_ONLY)
+      }
+    }
+    /*
     val (haveDeterminerSource, haveDeterminerDestination) = DeductionUtils.getPassThroughNodeStatePair(sourceNode, destinationNode)
     (haveDeterminerSource, haveDeterminerDestination) match {
       case (true, true) => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", "").replace("__##DESTINATION_FILTER_PHRASE##__", ""), RelationMatchState.MATCHED_BOTH) //このケースはないと思うが念の為。 
@@ -110,6 +127,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         }
       }
     }
+    */
   }
 
   private def getQeuries(edge:KnowledgeBaseEdge, aso:AnalyzedSentenceObject, transversalState:TransversalState):List[DeductionQuery] = {
@@ -130,20 +148,20 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     val nodeType: String = ToposoidUtils.getNodeType(SentenceType.CLAIM.index, ScopeType.LOCAL.index, FeatureType.PREDICATE_ARGUMENT.index)
     val (query1, relationMatchState1) = getQueryAndRelationMatchState(
       "MATCH (n1:%s)-[e]->(n2:%s) WHERE __##SOURCE_FILTER_PHRASE##__ AND e.caseName='%s' AND __##DESTINATION_FILTER_PHRASE##__ %s RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sentenceIdFilterQuery), 
-      "n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s'".format(sourcePas.normalizedName, sourcePas.isDenialWord, sourcePas.modalityType), 
-      "n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s'".format(destinationPas.normalizedName, destinationPas.isDenialWord, destinationPas.modalityType), 
+      "((n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s') OR (n1.caseType='det'  AND  n1.surface IN ['a', 'an', 'the', 'some', 'any'])) ".format(sourcePas.normalizedName, sourcePas.isDenialWord, sourcePas.modalityType), 
+      "((n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s') OR (n2.caseType='det'  AND  n2.surface IN ['a', 'an', 'the', 'some', 'any'])) ".format(destinationPas.normalizedName, destinationPas.isDenialWord, destinationPas.modalityType), 
       RelationMatchState.MATCHED_BOTH, sourceNode, destinationNode) 
       
     val (query2, relationMatchState2) = getQueryAndRelationMatchState(
       "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE __##SOURCE_FILTER_PHRASE##__ AND e.caseName='%s' AND __##DESTINATION_FILTER_PHRASE##__ %s RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sentenceIdFilterQuery), 
-      "n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s'".format(sourcePas.normalizedName, sourcePas.isDenialWord, sourcePas.modalityType), 
+      "((n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s') OR (n1.caseType='det'  AND  n1.surface IN ['a', 'an', 'the', 'some', 'any'])) ".format(sourcePas.normalizedName, sourcePas.isDenialWord, sourcePas.modalityType), 
       "Not e2ext:LocalEdge AND n2.isDenialWord='%s' AND n2.modalityType='%s'".format(destinationPas.isDenialWord, destinationPas.modalityType), 
       RelationMatchState.MATCHED_SOURCE_NODE_ONLY, sourceNode, destinationNode) 
 
     val (query3, relationMatchState3) = getQueryAndRelationMatchState(
       "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE __##SOURCE_FILTER_PHRASE##__ AND e.caseName='%s' AND __##DESTINATION_FILTER_PHRASE##__ %s RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, sentenceIdFilterQuery), 
       "Not e1ext:LocalEdge AND n1.isDenialWord='%s' AND n1.modalityType='%s'".format(sourcePas.isDenialWord, sourcePas.modalityType), 
-      "n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s'".format(destinationPas.normalizedName, destinationPas.isDenialWord, destinationPas.modalityType), 
+      "((n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s') OR (n2.caseType='det'  AND  n2.surface IN ['a', 'an', 'the', 'some', 'any'])) ".format(destinationPas.normalizedName, destinationPas.isDenialWord, destinationPas.modalityType), 
       RelationMatchState.MATCHED_TARGET_NODE_ONLY, sourceNode, destinationNode) 
 
     val (query4, relationMatchState4) = getQueryAndRelationMatchState(
