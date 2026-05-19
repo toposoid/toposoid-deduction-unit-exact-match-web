@@ -362,7 +362,7 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
     val sentence2 = "時は金なり。"
     val paraphrase2 = "時間は金なり。" 
     val sentence3 = "思い立ったが吉日。"
-    val paraphrase3 = "思い立ったら吉日。" 
+    val paraphrase3 = "決心したら吉日。" 
     val sentence4 = "人事を尽くして天命を待つ。"
     val paraphrase4 = "人事を尽くして涅槃を待つ。"
 
