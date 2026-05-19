@@ -55,175 +55,196 @@ curl -X POST -H "Content-Type: application/json" -H 'X_TOPOSOID_TRANSVERSAL_STAT
               "references": [],
               "tableOfContents": [],
               "headlines": []                
-            }
+            }}
     ],
     "claimLogicRelation": [
     ]
 }
-' http://localhost:9002/regist
+' http://localhost:9002/registerForManual
 
 
 # Deduction
 curl -X POST -H "Content-Type: application/json" -H 'X_TOPOSOID_TRANSVERSAL_STATE: {"userId":"test-user", "username":"guest", "roleId":0, "csrfToken":""}' -d '{
-    "analyzedSentenceObjects": [
-        {
-            "nodeMap": {
-                "c1bec44a-ec99-436a-9354-22231d43a435-2": {
-                    "nodeId": "c1bec44a-ec99-436a-9354-22231d43a435-2",
-                    "propositionId": "58704341-49d8-43eb-ba4f-fa85e6b999e3",
-                    "sentenceId": "c1bec44a-ec99-436a-9354-22231d43a435",
-                    "predicateArgumentStructure": {
-                        "currentId": 2,
-                        "parentId": -1,
-                        "isMainSection": true,
-                        "surface": "易し。",
-                        "normalizedName": "易い",
-                        "dependType": "D",
-                        "caseType": "文末",
-                        "isDenialWord": false,
-                        "isConditionalConnection": false,
-                        "normalizedNameYomi": "やすい?易しい",
-                        "surfaceYomi": "やすし。",
-                        "modalityType": "-",
-                        "parallelType": "-",
-                        "nodeType": 1,
-                        "morphemes": [
-                            "形容詞,*,イ形容詞アウオ段,文語基本形",
-                            "特殊,句点,*,*"
-                        ]
-                    },
-                    "localContext": {
-                        "lang": "ja_JP",
-                        "namedEntity": "",
-                        "rangeExpressions": {
-                            "": {}
-                        },
-                        "categories": {
-                            "": ""
-                        },
-                        "domains": {
-                            "": ""
-                        },
-                        "knowledgeFeatureReferences": []
-                    }
-                },
-                "c1bec44a-ec99-436a-9354-22231d43a435-1": {
-                    "nodeId": "c1bec44a-ec99-436a-9354-22231d43a435-1",
-                    "propositionId": "58704341-49d8-43eb-ba4f-fa85e6b999e3",
-                    "sentenceId": "c1bec44a-ec99-436a-9354-22231d43a435",
-                    "predicateArgumentStructure": {
-                        "currentId": 1,
-                        "parentId": 2,
-                        "isMainSection": false,
-                        "surface": "産むが",
-                        "normalizedName": "産む",
-                        "dependType": "D",
-                        "caseType": "連用",
-                        "isDenialWord": false,
-                        "isConditionalConnection": false,
-                        "normalizedNameYomi": "うむ",
-                        "surfaceYomi": "うむが",
-                        "modalityType": "-",
-                        "parallelType": "-",
-                        "nodeType": 1,
-                        "morphemes": [
-                            "動詞,*,子音動詞マ行,基本形",
-                            "助詞,接続助詞,*,*"
-                        ]
-                    },
-                    "localContext": {
-                        "lang": "ja_JP",
-                        "namedEntity": "",
-                        "rangeExpressions": {
-                            "": {}
-                        },
-                        "categories": {
-                            "": ""
-                        },
-                        "domains": {
-                            "産む": "家庭・暮らし"
-                        },
-                        "knowledgeFeatureReferences": []
-                    }
-                },
-                "c1bec44a-ec99-436a-9354-22231d43a435-0": {
-                    "nodeId": "c1bec44a-ec99-436a-9354-22231d43a435-0",
-                    "propositionId": "58704341-49d8-43eb-ba4f-fa85e6b999e3",
-                    "sentenceId": "c1bec44a-ec99-436a-9354-22231d43a435",
-                    "predicateArgumentStructure": {
-                        "currentId": 0,
-                        "parentId": 1,
-                        "isMainSection": false,
-                        "surface": "案ずるより",
-                        "normalizedName": "案ずる",
-                        "dependType": "D",
-                        "caseType": "連用",
-                        "isDenialWord": false,
-                        "isConditionalConnection": false,
-                        "normalizedNameYomi": "あんずる",
-                        "surfaceYomi": "あんずるより",
-                        "modalityType": "-",
-                        "parallelType": "-",
-                        "nodeType": 1,
-                        "morphemes": [
-                            "動詞,*,ザ変動詞,基本形",
-                            "助詞,接続助詞,*,*"
-                        ]
-                    },
-                    "localContext": {
-                        "lang": "ja_JP",
-                        "namedEntity": "",
-                        "rangeExpressions": {
-                            "": {}
-                        },
-                        "categories": {
-                            "": ""
-                        },
-                        "domains": {
-                            "": ""
-                        },
-                        "knowledgeFeatureReferences": []
-                    }
-                }
+  "analyzedSentenceObjects": [
+    {
+      "nodeMap": {
+        "4a2994a1-ec7a-438b-a290-0cfb563a5170-2": {
+          "localContext": {
+            "domains": {
+              "": ""
             },
-            "edgeList": [
-                {
-                    "sourceId": "c1bec44a-ec99-436a-9354-22231d43a435-1",
-                    "destinationId": "c1bec44a-ec99-436a-9354-22231d43a435-2",
-                    "caseStr": "連用",
-                    "dependType": "D",
-                    "parallelType": "-",
-                    "hasInclusion": false,
-                    "logicType": "-"
-                },
-                {
-                    "sourceId": "c1bec44a-ec99-436a-9354-22231d43a435-0",
-                    "destinationId": "c1bec44a-ec99-436a-9354-22231d43a435-1",
-                    "caseStr": "連用",
-                    "dependType": "D",
-                    "parallelType": "-",
-                    "hasInclusion": false,
-                    "logicType": "-"
-                }
+            "categories": {
+              "": ""
+            },
+            "rangeExpressions": {
+              "": {}
+            },
+            "namedEntities": {},
+            "lang": "ja_JP",
+            "properNouns": {},
+            "knowledgeFeatureReferences": []
+          },
+          "predicateArgumentStructure": {
+            "caseGroupType": 0,
+            "surface": "易し。",
+            "casePhrase": "",
+            "casePhraseId": "",
+            "modalityType": "-",
+            "dependType": "D",
+            "surfaceYomi": "やさし。",
+            "normalizedNameYomi": "やさしい",
+            "parentId": -1,
+            "isDenialWord": false,
+            "normalizedName": "易しい",
+            "currentId": 2,
+            "morphemes": [
+              "形容詞,*,イ形容詞イ段,文語基本形",
+              "特殊,句点,*,*"
             ],
-            "knowledgeBaseSemiGlobalNode": {
-                "nodeId": "c1bec44a-ec99-436a-9354-22231d43a435",
-                "propositionId": "58704341-49d8-43eb-ba4f-fa85e6b999e3",
-                "sentenceId": "c1bec44a-ec99-436a-9354-22231d43a435",
-                "sentence": "案ずるより産むが易し。",
-                "sentenceType": 1,
-                "localContextForFeature": {
-                    "lang": "ja_JP",
-                    "knowledgeFeatureReferences": []
-                }
+            "isMainSection": true,
+            "nodeType": 1,
+            "parallelType": "-",
+            "isConditionalConnection": false,
+            "caseType": "文末"
+          },
+          "propositionId": "612bf3d6-bdb5-47b9-a3a6-185015c8c414",
+          "nodeId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-2",
+          "sentenceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170"
+        },
+        "4a2994a1-ec7a-438b-a290-0cfb563a5170-1": {
+          "localContext": {
+            "domains": {
+              "産む": "家庭・暮らし"
             },
-            "deductionResult": {
-                "status": false,
-                "coveredPropositionResults": [],
-                "havePremiseInGivenProposition": false
-            }
+            "categories": {
+              "": ""
+            },
+            "rangeExpressions": {
+              "": {}
+            },
+            "namedEntities": {},
+            "lang": "ja_JP",
+            "properNouns": {},
+            "knowledgeFeatureReferences": []
+          },
+          "predicateArgumentStructure": {
+            "caseGroupType": 0,
+            "surface": "産むが",
+            "casePhrase": "",
+            "casePhraseId": "",
+            "modalityType": "-",
+            "dependType": "D",
+            "surfaceYomi": "うむが",
+            "normalizedNameYomi": "うむ",
+            "parentId": 2,
+            "isDenialWord": false,
+            "normalizedName": "産む",
+            "currentId": 1,
+            "morphemes": [
+              "動詞,*,子音動詞マ行,基本形",
+              "助詞,接続助詞,*,*"
+            ],
+            "isMainSection": false,
+            "nodeType": 1,
+            "parallelType": "-",
+            "isConditionalConnection": false,
+            "caseType": "連用"
+          },
+          "propositionId": "612bf3d6-bdb5-47b9-a3a6-185015c8c414",
+          "nodeId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-1",
+          "sentenceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170"
+        },
+        "4a2994a1-ec7a-438b-a290-0cfb563a5170-0": {
+          "localContext": {
+            "domains": {
+              "": ""
+            },
+            "categories": {
+              "": ""
+            },
+            "rangeExpressions": {
+              "": {}
+            },
+            "namedEntities": {},
+            "lang": "ja_JP",
+            "properNouns": {},
+            "knowledgeFeatureReferences": []
+          },
+          "predicateArgumentStructure": {
+            "caseGroupType": 0,
+            "surface": "案ずるより",
+            "casePhrase": "",
+            "casePhraseId": "",
+            "modalityType": "-",
+            "dependType": "D",
+            "surfaceYomi": "あんずるより",
+            "normalizedNameYomi": "あんずる",
+            "parentId": 1,
+            "isDenialWord": false,
+            "normalizedName": "案ずる",
+            "currentId": 0,
+            "morphemes": [
+              "動詞,*,ザ変動詞,基本形",
+              "助詞,接続助詞,*,*"
+            ],
+            "isMainSection": false,
+            "nodeType": 1,
+            "parallelType": "-",
+            "isConditionalConnection": false,
+            "caseType": "連用"
+          },
+          "propositionId": "612bf3d6-bdb5-47b9-a3a6-185015c8c414",
+          "nodeId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-0",
+          "sentenceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170"
         }
-    ]
+      },
+      "edgeList": [
+        {
+          "hasInclusion": false,
+          "dependType": "D",
+          "parallelType": "-",
+          "destinationId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-2",
+          "sourceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-1",
+          "logicType": "-",
+          "caseStr": "連用"
+        },
+        {
+          "hasInclusion": false,
+          "dependType": "D",
+          "parallelType": "-",
+          "destinationId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-1",
+          "sourceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170-0",
+          "logicType": "-",
+          "caseStr": "連用"
+        }
+      ],
+      "knowledgeBaseSemiGlobalNode": {
+        "propositionId": "612bf3d6-bdb5-47b9-a3a6-185015c8c414",
+        "localContextForFeature": {
+          "lang": "ja_JP",
+          "knowledgeFeatureReferences": []
+        },
+        "sentenceType": 1,
+        "documentId": "4a2994a1-ec7a-438b-a290-0cfb563a5170",
+        "sentenceId": "4a2994a1-ec7a-438b-a290-0cfb563a5170",
+        "sentence": "案ずるより産むが易し。"
+      },
+      "deductionResult": {
+        "deductionPhaseType": 1,
+        "havePremiseInGivenProposition": false,
+        "coveredPropositionEdges": [],
+        "status": false,
+        "evidenceKnowledgeList": [],
+        "authenticityType": 2
+      }
+    }
+  ],
+  "deductionConfiguration": {
+    "actionModeType": 2,
+    "llmModel": "",
+    "llmModelHyperParameters": {},
+    "maxTargetKnowledgeCount": 10
+  }
 }' http://localhost:9101/execute
 ```
 
