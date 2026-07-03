@@ -96,38 +96,6 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         (query, RelationMatchState.MATCHED_SOURCE_NODE_ONLY)
       }
     }
-    /*
-    val (haveDeterminerSource, haveDeterminerDestination) = DeductionUtils.getPassThroughNodeStatePair(sourceNode, destinationNode)
-    (haveDeterminerSource, haveDeterminerDestination) match {
-      case (true, true) => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", "").replace("__##DESTINATION_FILTER_PHRASE##__", ""), RelationMatchState.MATCHED_BOTH) //このケースはないと思うが念の為。 
-      case (true, false) => haveFeatureOnDestination match {
-        case true => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", "").replace("__##DESTINATION_FILTER_PHRASE##__", destinationFilterPhrase), RelationMatchState.MATCHED_SOURCE_NODE_ONLY)
-        case _ => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", "").replace("__##DESTINATION_FILTER_PHRASE##__", destinationFilterPhrase), RelationMatchState.MATCHED_BOTH)
-      }
-      case (false, true) => haveFeatureOnSource match {
-        case true => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", sourceFilterPhrase).replace("__##DESTINATION_FILTER_PHRASE##__", ""), RelationMatchState.MATCHED_TARGET_NODE_ONLY)
-        case _ => (queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", sourceFilterPhrase).replace("__##DESTINATION_FILTER_PHRASE##__", ""), RelationMatchState.MATCHED_BOTH)
-      }
-      case (false, false) =>  {
-        val query = queryTemplate.replace("__##SOURCE_FILTER_PHRASE##__", sourceFilterPhrase).replace("__##DESTINATION_FILTER_PHRASE##__", destinationFilterPhrase)
-        //クエリでレコードが取れる状態は、haveFeatureOnSource, haveFeatureOnDestinationと完全に連動していない、、、　連動するとSynonymマッチの可能性を捨てることになる。
-        (haveFeatureOnSource, haveFeatureOnDestination) match {
-          case (false, false) => {   
-            (query, expectedRelationMatchState)
-          }     
-          case (true, true) => {
-            (query, RelationMatchState.NOT_MATCHED_BOTH)
-          }
-          case (true, false) => {
-            (query, RelationMatchState.MATCHED_TARGET_NODE_ONLY)            
-          }
-          case (false, true) => {
-            (query, RelationMatchState.MATCHED_SOURCE_NODE_ONLY)
-          }
-        }
-      }
-    }
-    */
   }
 
   private def getQeuries(edge:KnowledgeBaseEdge, aso:AnalyzedSentenceObject, transversalState:TransversalState):List[DeductionQuery] = {
@@ -177,61 +145,5 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       DeductionQuery(query4, relationMatchState4, "n1", "n2", false, false)
     )
 
-    /*
-      (haveDeterminerSource, haveDeterminerDestination) match {
-      case (true, true) => "MATCH (n1:%s)-[e]->(n2:%s) %s WHERE n1.caseType='dt' AND n2.caseType='dt' RETURN n1, e, n2".format(nodeType, nodeType, sentenceIdFilterQuery) 
-      case (true, false) => "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.caseType='dt' AND e.caseName='%s' AND n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, edge.caseStr, destinationNode.predicateArgumentStructure.normalizedName, destinationNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.modalityType, sentenceIdFilterQuery) 
-      case (false, true) => "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s' AND e.caseName='%s' AND n2.caseType='dt' %s RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, sourceNode.predicateArgumentStructure.modalityType, edge.caseStr, sentenceIdFilterQuery) 
-      case (false, false) => "MATCH (n1:%s)-[e]->(n2:%s) WHERE n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s' AND e.caseName='%s' AND n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, sourceNode.predicateArgumentStructure.modalityType, edge.caseStr, destinationNode.predicateArgumentStructure.normalizedName, destinationNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.modalityType, sentenceIdFilterQuery) 
-    }
-                  
-    val query2 = (haveDeterminerSource, haveDeterminerDestination) match {
-      case (true, true) => "MATCH (n1:%s)-[e]->(n2:%s) %s WHERE n1.caseType='dt' AND n2.caseType='dt' RETURN n1, e, n2".format(nodeType, nodeType, sentenceIdFilterQuery) //このケースはないと思うが念の為。 
-      case (true, false) => "" 
-      case (false, true) => "" 
-      case (false, false) => "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s' AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' AND n2.modalityType='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, sourceNode.predicateArgumentStructure.modalityType, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.modalityType, sentenceIdFilterQuery)
-      
-    }
-      
-      "MATCH (n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.normalizedName=\"%s\" AND n1.isDenialWord='%s' AND n1.modalityType='%s' AND e.caseName='%s' AND Not e2ext:LocalEdge AND n2.isDenialWord='%s' AND n2.modalityType='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.normalizedName, sourceNode.predicateArgumentStructure.isDenialWord, sourceNode.predicateArgumentStructure.modalityType, edge.caseStr, destinationNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.modalityType, sentenceIdFilterQuery)
-    val query3 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s) WHERE n2.normalizedName=\"%s\" AND n2.isDenialWord='%s' AND n2.modalityType='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND n1.isDenialWord='%s' AND n1.modalityType='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, destinationNode.predicateArgumentStructure.normalizedName, destinationNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.modalityType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, sourceNode.predicateArgumentStructure.modalityType, sentenceIdFilterQuery)
-    val query4 = "MATCH (n1ext)-[e1ext]-(n1:%s)-[e]->(n2:%s)-[e2ext]-(n2ext) WHERE n1.modalityType='%s' AND n2.modalityType='%s' AND e.caseName='%s' AND Not e1ext:LocalEdge AND Not e2ext:LocalEdge AND n1.isDenialWord='%s' AND n2.isDenialWord='%s' %s RETURN n1, e, n2".format(nodeType, nodeType, sourceNode.predicateArgumentStructure.modalityType, destinationNode.predicateArgumentStructure.modalityType, edge.caseStr, sourceNode.predicateArgumentStructure.isDenialWord, destinationNode.predicateArgumentStructure.isDenialWord, sentenceIdFilterQuery)
-
-
-    //命題のFeatureNodeのペアをどう持つかで、仮に表層テキスト単位でマッチしても判断を先送りする必要がある。RelationMatchStateを指定している意味。
-    (haveFeatureOnSource, haveFeatureOnDestination) match
-      case (false, false) => {
-        List(
-          DeductionQuery(query1, RelationMatchState.MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false)
-        )      
-      }
-      case (true, true) => {
-        List(
-          DeductionQuery(query1, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query2, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query3, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false)
-        )      
-      }
-      case (true, false) => {
-        List(
-          DeductionQuery(query1, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query2, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query3, RelationMatchState.MATCHED_TARGET_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false)
-        )      
-      }
-      case (false, true) => {
-        List(
-          DeductionQuery(query1, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query2, RelationMatchState.MATCHED_SOURCE_NODE_ONLY, "n1", "n2", false, false),
-          DeductionQuery(query3, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false),
-          DeductionQuery(query4, RelationMatchState.NOT_MATCHED_BOTH, "n1", "n2", false, false)
-        )      
-      }
-      */
   }
 }
