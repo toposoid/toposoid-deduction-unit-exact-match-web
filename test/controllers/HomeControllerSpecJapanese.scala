@@ -33,14 +33,16 @@ import play.api.http.Status.OK
 import play.api.libs.json.Json
 import play.api.test.Helpers.{POST, contentType, status, _}
 import play.api.test.{FakeRequest, _}
-import controllers.TestUtilsEx.{addImageInfoToAnalyzedSentenceObjects, getImageInfo, getKnowledge, getUUID, registerSingleClaim}
-import controllers.TestUtilsEx.getImageInfo2
+import controllers.TestUtilsEx.{getUUID, registerSingleClaim}
+import com.ideal.linked.toposoid.test.utils.TestUtils.{uploadImage, getAnalyzedSentenceObjectsJson}
 
 //import io.jvm.uuid.UUID
 
 import scala.concurrent.duration.DurationInt
 import com.ideal.linked.toposoid.protocol.model.base.VerifyingEdges
 import com.ideal.linked.toposoid.knowledgebase.regist.model.Reference
+import com.ideal.linked.toposoid.knowledgebase.regist.model.ImageReference
+import com.ideal.linked.toposoid.knowledgebase.regist.model.KnowledgeForImage
 
 class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with BeforeAndAfterAll with GuiceOneAppPerSuite  with DefaultAwaitTimeout with Injecting {
 
@@ -465,29 +467,34 @@ class HomeControllerSpecJapanese extends PlaySpec with BeforeAndAfter with Befor
     val sentence3 = "トラックが一台止まっています。"
     val reference3 = Reference(url = "", surface = "トラックが", surfaceIndex = 0, isWholeSentence = false,
       originalUrlOrReference = "https://farm8.staticflickr.com/7103/7210629614_5a388d9a9c_z.jpg")
-    val imageBoxInfo3 = ImageBoxInfo(x = 23, y = 25, weight = 601, height = 341)
+    val imageReference3 = ImageReference(reference3, x = 23, y = 25, width = 601, height = 341)
+    val knowledgeForImage3 = KnowledgeForImage(getUUID(), imageReference3)          
+    //val imageBoxInfo3 = ImageBoxInfo(x = 23, y = 25, weight = 601, height = 341)
 
     val paraphrase3 = "トレーラーが一台止まっています。"
     //val paraphrase3 = "大型車が一台止まっています。" 大型車は形容詞と解釈され、置換対象ノードとして認識しない。
     val referencePara3Ok = Reference(url = "", surface = "トレーラーが", surfaceIndex = 0, isWholeSentence = false,
       originalUrlOrReference = "https://farm8.staticflickr.com/7103/7210629614_5a388d9a9c_z.jpg")
-    val imageBoxInfoPara3Ok = ImageBoxInfo(x = 23, y = 25, weight = 601, height = 341)
+    val imageReferencePara3Ok = ImageReference(referencePara3Ok, x = 23, y = 25, width = 601, height = 341)
+    val knowledgeForImagePara3Ok = KnowledgeForImage(getUUID(), imageReferencePara3Ok)          
+
+    //val imageBoxInfoPara3Ok = ImageBoxInfo(x = 23, y = 25, weight = 601, height = 341)
 
     "returns an appropriate response" in {
       val lang = "ja_JP"
 
       val propositionId1 = getUUID()
       val sentenceId3 = getUUID()
-      val knowledge3 = getKnowledge(lang=lang, sentence=sentence3, reference=reference3, imageBoxInfo=imageBoxInfo3, transversalState)
-      val paraphraseKnowledge3 = getKnowledge(lang=lang, sentence=paraphrase3, reference=referencePara3Ok, imageBoxInfo=imageBoxInfoPara3Ok, transversalState)
+      val knowledge3 = Knowledge(lang=lang, sentence=sentence3, extentInfoJson = "{}", knowledgeForImages=List(uploadImage(knowledgeForImage3, transversalState)))
+      val paraphraseKnowledge3 = Knowledge(lang=lang, sentence=paraphrase3, extentInfoJson = "{}", knowledgeForImages=List(uploadImage(knowledgeForImagePara3Ok, transversalState)))
       TestUtilsEx.registerSingleClaim(KnowledgeForParser(propositionId1, sentenceId3, knowledge3), transversalState)
             
       val propositionIdForInference = java.util.UUID.randomUUID().toString
       val sentenceIdForInference3 = java.util.UUID.randomUUID().toString
       val premiseKnowledge = List.empty[KnowledgeForParser]
        val claimKnowledge = List(KnowledgeForParser(propositionIdForInference, sentenceIdForInference3, paraphraseKnowledge3))
-      val inputSentence = Json.toJson(InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)).toString()
-      val json = addImageInfoToAnalyzedSentenceObjects(lang=lang, inputSentence, getImageInfo2(List((referencePara3Ok, imageBoxInfoPara3Ok)), transversalState), transversalState)
+      val inputSentenceForParser = InputSentenceForParser(premiseKnowledge, claimKnowledge, ActionModeType.DEDUCTION_MODE.index)
+      val json = getAnalyzedSentenceObjectsJson(lang, inputSentenceForParser, transversalState)
       
       val fr = FakeRequest(POST, "/execute")
         .withHeaders("Content-type" -> "application/json", TRANSVERSAL_STATE.str -> transversalStateJson)

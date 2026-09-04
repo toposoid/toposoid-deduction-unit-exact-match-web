@@ -28,9 +28,9 @@ import play.api.libs.json.Json
 import com.ideal.linked.toposoid.protocol.model.base.VerifyingEdges
 import com.ideal.linked.toposoid.knowledgebase.model.{KnowledgeBaseNode, KnowledgeFeatureReference, LocalContext}
 import com.ideal.linked.toposoid.protocol.model.base.{AnalyzedSentenceObject, AnalyzedSentenceObjects}
-import com.ideal.linked.toposoid.knowledgebase.featurevector.model.RegistContentResult
+//import com.ideal.linked.toposoid.knowledgebase.featurevector.model.RegistContentResult
 
-case class ImageBoxInfo(x:Int, y:Int, weight:Int, height:Int)
+//case class ImageBoxInfo(x:Int, y:Int, weight:Int, height:Int)
 
 object TestUtilsEx {
   val neo4JUtils = new Neo4JUtilsImpl()
@@ -62,7 +62,7 @@ var usedUuidList = List.empty[String]
     //logger.info(uuid)
     uuid
   }
-
+  /*
   def getKnowledge(lang:String, sentence: String, reference: Reference, imageBoxInfo: ImageBoxInfo, transversalState: TransversalState): Knowledge = {
     Knowledge(sentence, lang, "{}", false, List(getImageInfo(reference, imageBoxInfo, transversalState)))
   }
@@ -146,5 +146,6 @@ var usedUuidList = List.empty[String]
       }
     }
     Json.toJson(AnalyzedSentenceObjects(updatedAsos, asos.deductionConfiguration)).toString()
-  }  
+  }
+  */  
 }
