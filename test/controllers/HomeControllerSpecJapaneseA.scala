@@ -601,8 +601,8 @@ class HomeControllerSpecJapaneseA extends PlaySpec with BeforeAndAfter with Befo
       val result1 = TestUtilsEx.isPosiNegaMatch(sentenceId = sentenceIdForInference1, verifyingEdgesList=verifyingEdgesList)
       assert(result1 == true)
 
-      //val result2 = TestUtilsEx.isPosiNegaMatch(sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList)
-      //assert(result2 == true)
+      val result2 = TestUtilsEx.isPosiNegaMatch(sentenceId = sentenceIdForInference2, verifyingEdgesList=verifyingEdgesList)
+      assert(result2 == true)
 
       val result3 = TestUtilsEx.isPosiNegaMatch(sentenceId = sentenceIdForInference3, verifyingEdgesList=verifyingEdgesList)
       assert(result3 == true)
